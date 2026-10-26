@@ -1,0 +1,16 @@
+{
+  "name": "qr-pay-simulation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "QR-Code-Manager und simulierte Bezahlstrecke per QR-Code (Kundennummer, Betrag, Gebühr)",
+  "main": "src/server.js",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "start": "node --no-warnings=ExperimentalWarning src/server.js",
+    "test": "node --no-warnings=ExperimentalWarning test/run.js"
+  },
+  "dependencies": {
+    "pg": "^8.13.1",
+    "qrcode": "^1.5.4"
+  }
+}
