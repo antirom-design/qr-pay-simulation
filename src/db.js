@@ -76,13 +76,15 @@ CREATE INDEX IF NOT EXISTS payments_code ON payments(code_id);
 
 function sqlite() {
   const { DatabaseSync } = require('node:sqlite');
-  const file = process.env.DB_FILE || path.join(__dirname, '..', 'data', 'qr.sqlite');
+  // Auf Vercel ohne Postgres nur als Notlösung: /tmp ist pro Instanz und nicht dauerhaft
+  const temp = !process.env.DB_FILE && !!process.env.VERCEL;
+  const file = process.env.DB_FILE || (temp ? '/tmp/qr.sqlite' : path.join(__dirname, '..', 'data', 'qr.sqlite'));
   if (file !== ':memory:') fs.mkdirSync(path.dirname(file), { recursive: true });
   const d = new DatabaseSync(file);
   d.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
   d.exec(schema('INTEGER PRIMARY KEY AUTOINCREMENT'));
   return {
-    kind: 'SQLite',
+    kind: temp ? 'SQLite (temporär, Postgres verbinden!)' : 'SQLite',
     all: async (q, p = []) => d.prepare(q).all(...p),
     get: async (q, p = []) => d.prepare(q).get(...p),
     run: async (q, p = []) => { d.prepare(q).run(...p); },
