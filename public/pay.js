@@ -71,7 +71,7 @@
   function showInfo(res) {
     const v = res.code.vars;
     app.innerHTML = `<section class="result"><div class="status-icon info"></div><h1 class="r-title">${esc(v.titel)}</h1>
-      <p class="r-text mono small">${esc(v.url)}</p><a class="btn block" href="${esc(v.url)}" target="_top" rel="noopener">Weiter</a>${protocol(res.steps)}</section>`;
+      <p class="r-text mono small">${esc(v.url)}</p><a class="btn block" href="${esc(v.url)}" ${v.url.startsWith('/') ? '' : 'target="_blank" rel="noopener"'}>Weiter</a>${protocol(res.steps)}</section>`;
   }
 
   function showCheckout(res) {

@@ -21,7 +21,7 @@ const TYPES = [
     description: 'Einfacher verwalteter Link, z. B. zu einer Produktseite. Zeigt, dass der Manager mehr als Zahlungen kann.',
     schema: [
       { key: 'titel', label: 'Titel', kind: 'text', required: true },
-      { key: 'url', label: 'Ziel-URL', kind: 'url', required: true, hint: 'https://…' },
+      { key: 'url', label: 'Ziel', kind: 'url', required: true, hint: '/info oder https://…' },
     ],
   },
 ];
@@ -109,11 +109,16 @@ function postgres() {
 const db = process.env.DATABASE_URL ? postgres() : sqlite();
 
 // Code-Arten bei jedem Start aktualisieren
+async function seed() {
+  for (const t of TYPES) {
+    await db.run(`INSERT INTO code_types (id, name, description, schema) VALUES (?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET name = excluded.name, description = excluded.description, schema = excluded.schema`,
+    [t.id, t.name, t.description, JSON.stringify(t.schema)]);
+  }
+  // Frühere Beispiel-Codes zeigten auf example.com, jetzt auf die eigene Info-Seite
+  await db.run(`UPDATE codes SET vars = REPLACE(vars, '"url":"https://example.com/"', '"url":"/info"') WHERE type = 'INFO' AND vars LIKE '%example.com%'`);
+}
 let seeded;
-db.ready = () => (seeded ??= Promise.all(TYPES.map((t) => db.run(
-  `INSERT INTO code_types (id, name, description, schema) VALUES (?, ?, ?, ?)
-   ON CONFLICT(id) DO UPDATE SET name = excluded.name, description = excluded.description, schema = excluded.schema`,
-  [t.id, t.name, t.description, JSON.stringify(t.schema)],
-))).catch((e) => { seeded = null; throw e; }));
+db.ready = () => (seeded ??= seed().catch((e) => { seeded = null; throw e; }));
 
 module.exports = db;

@@ -13,6 +13,7 @@ const page = (title, bodyClass, body, scripts = []) => `<!doctype html>
 </head>
 <body class="${bodyClass}">
 ${body}
+${/\bmobile\b/.test(bodyClass) && !/\bprov\b/.test(bodyClass) && !/\binfo\b/.test(bodyClass) ? '<footer class="m-foot"><a href="/info">So funktioniert QR-Pay</a></footer>' : ''}
 ${scripts.map((s) => `<script src="/static/${s}"></script>`).join('\n')}
 </body>
 </html>`;
@@ -23,7 +24,7 @@ function manager() {
   return page('QR-Pay Simulation', 'manager', `
 <header class="top">
   <div class="brand"><span class="logo" aria-hidden="true"></span><div><strong>QR-Pay</strong><small>Simulation · keine echten Zahlungen</small></div></div>
-  <div class="top-meta" id="meta"></div>
+  <div class="top-meta"><a href="/info">So funktioniert's</a><span id="meta"></span></div>
 </header>
 
 <main class="wrap">
@@ -151,8 +152,50 @@ function result(p, code, token) {
 </main>`);
 }
 
-function message(title, text) {
-  return page(title, 'mobile', `<main class="m-wrap result"><div class="status-icon err" aria-hidden="true"></div><h1 class="r-title">${esc(title)}</h1><p class="r-text">${esc(text)}</p></main>`);
+function info() {
+  return page('So funktioniert QR-Pay', 'mobile info', `${SIM_BADGE}
+<main class="m-wrap info-page">
+  <div class="merchant-bar"><span class="m-logo">M</span><span>QR-Pay · Muster GmbH</span></div>
+  <h1>So funktioniert QR-Pay</h1>
+  <p class="lead">Rechnung bekommen, QR-Code scannen, Zahlart wählen, fertig. Kein Abtippen von IBAN oder Kundennummer.</p>
+
+  <h2>In 4 Schritten bezahlt</h2>
+  <ol class="howto">
+    <li><b>Scannen.</b> Öffne die Kamera und richte sie auf den QR-Code auf deiner Rechnung.</li>
+    <li><b>Prüfen.</b> Du siehst Kundennummer, Betrag, Gebühr und den Endbetrag. Der Code wird vorher auf Echtheit geprüft.</li>
+    <li><b>Zahlart wählen.</b> PayPal, Wero, Banking-App, Kreditkarte, Apple Pay, Google Pay, Klarna oder SEPA-Lastschrift.</li>
+    <li><b>Bestätigen.</b> Du gibst die Zahlung bei deinem Anbieter frei und bekommst sofort einen Beleg.</li>
+  </ol>
+
+  <h2>Ist das sicher?</h2>
+  <ul class="facts">
+    <li><b>Fälschungssicher:</b> Jeder Code ist digital signiert. Wird der Betrag verändert, lehnen wir den Code ab.</li>
+    <li><b>Immer aktuell:</b> Ändert sich eine Rechnung, werden alte Codes ungültig.</li>
+    <li><b>Keine doppelte Zahlung:</b> Ein bezahlter Code zeigt beim nächsten Scan nur noch den Beleg.</li>
+    <li><b>Deine Bankdaten bleiben beim Anbieter.</b> Wir sehen nur, dass bezahlt wurde.</li>
+  </ul>
+
+  <h2>Was ist die Gebühr?</h2>
+  <p>Die Gebühr ist eine Servicegebühr des Rechnungsstellers. Sie steht fest im Code und ist für jede Zahlart gleich hoch. Für die Wahl der Zahlart zahlst du nichts extra.</p>
+
+  <h2>Etwas hat nicht geklappt?</h2>
+  <ul class="facts">
+    <li><b>Abgebrochen oder abgelehnt:</b> Es wurde nichts abgebucht. Scanne den Code erneut und wähle eine andere Zahlart.</li>
+    <li><b>„Code veraltet“ oder „deaktiviert“:</b> Bitte frag beim Rechnungssteller nach einem neuen Code.</li>
+    <li><b>„Bereits bezahlt“:</b> Alles erledigt, den Beleg findest du direkt dort.</li>
+  </ul>
+
+  <div class="note-box"><b>Hinweis:</b> Dies ist eine Simulation. Es wird kein echtes Geld bewegt, alle Anbieter-Seiten sind nachgebaut.</div>
+
+  <a class="btn block" href="/" target="_top">Simulation ausprobieren</a>
+  <button class="btn block ghost" type="button" onclick="history.length > 1 ? history.back() : (location.href = '/')">Zurück</button>
+</main>`);
 }
 
-module.exports = { manager, pay, provider, result, message };
+function message(title, text) {
+  return page(title, 'mobile info', `<main class="m-wrap result"><div class="status-icon err" aria-hidden="true"></div><h1 class="r-title">${esc(title)}</h1><p class="r-text">${esc(text)}</p>
+  <p class="r-text">Bitte scanne den QR-Code erneut. Klappt es weiterhin nicht, wende dich an den Rechnungssteller.</p>
+  <a class="btn block" href="/info">So funktioniert QR-Pay</a></main>`);
+}
+
+module.exports = { manager, pay, provider, result, message, info };

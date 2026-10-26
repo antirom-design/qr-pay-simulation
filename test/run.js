@@ -117,7 +117,7 @@ server.listen(0, async () => {
     ok(`Statuslog mit ${r.body.events.length} Einträgen und 4 Zahlungen`);
 
     // Info-Code
-    r = await call('POST', '/api/codes', { type: 'INFO', label: 'Info', vars: { titel: 'Hallo', url: 'https://example.com' } });
+    r = await call('POST', '/api/codes', { type: 'INFO', label: 'Info', vars: { titel: 'Hallo', url: '/info' } });
     assert.equal((await call('POST', '/api/decode', { token: r.body.token })).body.code.type, 'INFO');
     ok('Zweite Code-Art INFO funktioniert');
 

@@ -49,7 +49,8 @@ function validateVars(type, input) {
       else if (c > 10_000_00) errors[f.key] = 'Maximal 10.000 €';
       else out[f.key] = c;
     } else if (f.kind === 'url') {
-      try { const u = new URL(s); if (!/^https?:$/.test(u.protocol)) throw 0; out[f.key] = u.href; } catch { errors[f.key] = 'Ungültige URL'; }
+      if (/^\/[\w\-/]*$/.test(s)) out[f.key] = s; // Seite dieser App, z. B. /info
+      else try { const u = new URL(s); if (!/^https?:$/.test(u.protocol)) throw 0; out[f.key] = u.href; } catch { errors[f.key] = 'https://… oder /info'; }
     } else {
       if (s.length > 140) errors[f.key] = 'Maximal 140 Zeichen';
       else out[f.key] = s;

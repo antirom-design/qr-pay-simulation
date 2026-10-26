@@ -36,7 +36,7 @@
     const type = types.find((t) => t.id === typeId);
     const sample = typeId === 'PAY'
       ? { kundennummer: randomKdnr(), betrag: '49,90', gebuehr: '1,50', zweck: `Rechnung 2026-${100 + Math.floor(Math.random() * 900)}` }
-      : { titel: 'Produktseite', url: 'https://example.com' };
+      : { titel: 'So funktioniert QR-Pay', url: '/info' };
     $('#create-form').innerHTML = `
       <label class="f">Code-Art
         <select name="type">${types.map((t) => `<option value="${t.id}" ${t.id === typeId ? 'selected' : ''}>${t.id} · ${esc(t.name)}</option>`).join('')}</select></label>
@@ -155,7 +155,7 @@
   };
 
   async function seed() {
-    await api('/api/codes', { method: 'POST', body: { type: 'INFO', label: 'Infoseite', vars: { titel: 'So funktioniert QR-Pay', url: 'https://example.com' }, validDays: 0, singleUse: false } });
+    await api('/api/codes', { method: 'POST', body: { type: 'INFO', label: 'Infoseite', vars: { titel: 'So funktioniert QR-Pay', url: '/info' }, validDays: 0, singleUse: false } });
     const k = randomKdnr();
     await api('/api/codes', { method: 'POST', body: { type: 'PAY', label: 'Stromrechnung Oktober', vars: { kundennummer: k, betrag: '89,40', gebuehr: '1,50', zweck: 'Rechnung 2026-104' }, validDays: 7, singleUse: true } });
     await api('/api/codes', { method: 'POST', body: { type: 'PAY', label: 'Werkstatt Inspektion', vars: { kundennummer: randomKdnr(), betrag: '249,00', gebuehr: '2,90', zweck: 'Auftrag 5531' }, validDays: 30, singleUse: true } });
