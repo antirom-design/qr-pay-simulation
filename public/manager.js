@@ -260,7 +260,7 @@
 
   async function init() {
     [info, types] = await Promise.all([api('/api/info'), api('/api/types')]);
-    $('#meta').innerHTML = `<span title="Adresse, die in den QR-Codes steht">QR zeigt auf <b class="mono">${esc(new URL(info.baseUrl).host)}</b></span><span>DB: ${esc(info.db)}</span>`;
+    $('#meta').innerHTML = `<span title="Adresse, die in den QR-Codes steht">QR zeigt auf <b class="mono">${esc(new URL(info.baseUrl).host)}</b></span><span${/temporär/.test(info.db) ? " style=\"color:#fbbf24\"" : ""}>DB: ${esc(info.db)}</span>`;
     $('#types').innerHTML = types.map((t) => `<div class="type"><span class="badge type-badge">${t.id}</span><div><b>${esc(t.name)}</b><p>${esc(t.description)}</p>
       <small>Variablen: ${t.schema.map((f) => `${esc(f.label.replace(/ \(.*\)/, ''))}${f.required ? '' : ' (optional)'}`).join(', ')}</small></div></div>`).join('');
     renderCreate('PAY');
