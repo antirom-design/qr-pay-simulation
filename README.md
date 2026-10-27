@@ -8,6 +8,10 @@ Die komplette Strecke „Bezahlen per QR-Code“ zum Durchklicken. Es wird kein 
   Scan mit dem Handy oder „Simulation starten“ (Handy als Modal) → Decoding mit Fortschritt → Betrag, Gebühr, Endbetrag →
   „Sofort bezahlen mit“ PayPal, Wero, Banking-App, Kreditkarte, Apple Pay, Google Pay, Klarna, SEPA → simulierter Checkout beim Anbieter →
   Webhook und Verbuchung → Rücksprung → Bestätigung mit Beleg.
+- **Weitere Code-Arten:** `KONTO` (Kontostand nach Anmeldung mit Geburtsdatum, offenen Betrag direkt bezahlen, Sperre nach 3 Fehlversuchen),
+  `ADR` (Adressänderung nach Anmeldung mit Geburtsdatum), `DOK` (Dokument wie eine Befreiungsbescheinigung einreichen nach Online-Ausweis,
+  Video-Ident oder Bank-Ident, verschlüsselt gespeichert, im Manager abrufbar), `INFO` (verwalteter Link, z. B. auf `/info`).
+  Geheime Variablen (Name, Geburtsdatum, Adresse, Kontostand) stehen nur in der Datenbank, nie im QR-Code.
 - **Statuslog pro Code:** Jeder Schritt von Manager, Handy, Server und Anbieter erscheint live neben dem Handy.
 
 ## Was alles simuliert wird
@@ -60,8 +64,9 @@ die Tabellen legt sie beim ersten Aufruf selbst an.
 src/db.js         Datenbank (Postgres oder SQLite), Tabellen code_types, codes, payments, events
 src/codes.js      Service 1: Code-Arten, Codes, Signatur, Statuslog
 src/payments.js   Service 2: Decoding-Schritte, Zahlung starten, Anbieter-Ergebnis verbuchen
+src/flows.js      Anmeldung (Geburtsdatum, Ident), Kontostand, Adressänderung, Dokument-Upload (AES-256-GCM)
 src/app.js        HTTP-Routen und API
 src/views.js      HTML-Seiten
-public/           manager.js, pay.js (Handy), provider.js (Anbieter-Checkouts), style.css
+public/           manager.js, pay.js + flows.js (Handy), provider.js (Anbieter-Checkouts), style.css
 api/index.js      Einstieg für Vercel
 ```

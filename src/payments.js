@@ -15,6 +15,19 @@ const METHODS = [
 ];
 const METHOD = Object.fromEntries(METHODS.map((m) => [m.id, m]));
 const STALE_MIN = 15;
+const IDENTS = [
+  { id: 'eid', name: 'Online-Ausweis', sub: 'Personalausweis ans Handy halten, PIN eingeben', niveau: 'hoch' },
+  { id: 'video', name: 'Video-Ident', sub: 'Kurzes Video-Gespräch mit Ausweis', niveau: 'substanziell' },
+  { id: 'bankident', name: 'Bank-Ident', sub: 'Mit deinem Online-Banking bestätigen', niveau: 'substanziell' },
+];
+const allowedIdents = (code) => IDENTS.filter((i) => code.vars.niveau !== 'hoch' || i.niveau === 'hoch');
+
+// Kontostand = Startwert aus dem Code + alle bezahlten Ausgleichszahlungen
+async function kontoState(code) {
+  const r = await db.get(`SELECT CAST(COALESCE(SUM(total), 0) AS INTEGER) AS paid FROM payments WHERE code_id = ? AND status = 'bezahlt'`, [code.id]);
+  const saldo = code.vars.kontostand + Number(r.paid);
+  return { saldo, open: Math.max(0, -saldo) };
+}
 
 const getPayment = (id) => db.get('SELECT * FROM payments WHERE id = ?', [id]);
 const paidPayment = (codeId) => db.get(`SELECT * FROM payments WHERE code_id = ? AND status = 'bezahlt' ORDER BY updated_at DESC LIMIT 1`, [codeId]);
@@ -68,13 +81,19 @@ async function decode(token, { source = 'handy', count = true, quiet = false } =
   }
 
   if (!step('Aktuelle Version', d.payload.n === code.version, `Version ${d.payload.n}${d.payload.n === code.version ? '' : `, aktuell ist ${code.version}`}`))
-    return fail('Dieser QR-Code ist veraltet. Der Betrag wurde inzwischen geändert, bitte den neuen Code verwenden.', code.id);
+    return fail('Dieser QR-Code ist veraltet. Der Inhalt wurde inzwischen geändert, bitte den neuen Code verwenden.', code.id);
 
   const paid = await paidPayment(code.id);
   if (code.status === 'bezahlt' && paid) {
     step('Status geprüft', true, 'Bereits bezahlt');
     if (!quiet) await C.log(code.id, null, 'server', 'info', 'Code ist bereits bezahlt, Beleg wird angezeigt');
     return { ok: true, steps, code: publicCode(code), alreadyPaid: publicPayment(paid) };
+  }
+  if (code.status === 'erledigt') {
+    const sub = await db.get('SELECT * FROM submissions WHERE code_id = ? ORDER BY created_at DESC LIMIT 1', [code.id]);
+    step('Status geprüft', true, 'Bereits erledigt');
+    if (!quiet) await C.log(code.id, null, 'server', 'info', 'Vorgang ist bereits erledigt, Bestätigung wird angezeigt');
+    return { ok: true, steps, code: publicCode(code), alreadyDone: sub && { id: sub.id, kind: sub.kind, createdAt: sub.created_at } };
   }
   if (!step('Code aktiv', code.status === 'aktiv', code.status)) return fail('Dieser Code wurde deaktiviert.', code.id);
   const expired = code.expires_at && new Date(code.expires_at) < new Date();
@@ -85,14 +104,21 @@ async function decode(token, { source = 'handy', count = true, quiet = false } =
     const v = code.vars;
     step('Endbetrag berechnet', true, `${eur(v.betrag)} + ${eur(v.gebuehr)} = ${eur(v.betrag + v.gebuehr)}`);
     if (!quiet) await C.log(code.id, null, 'server', 'ok', `Decoding erfolgreich, Endbetrag ${eur(v.betrag + v.gebuehr)}`);
+  } else if (type.auth === 'geburtsdatum') {
+    step('Anmeldung erforderlich', true, 'Geburtsdatum, max. 3 Versuche');
+    if (!quiet) await C.log(code.id, null, 'server', 'ok', 'Decoding erfolgreich, Kunde muss sich mit dem Geburtsdatum anmelden');
+  } else if (type.auth === 'ident') {
+    step('Identifizierung erforderlich', true, `Vertrauensniveau ${code.vars.niveau}`);
+    if (!quiet) await C.log(code.id, null, 'server', 'ok', `Decoding erfolgreich, Identifizierung mit Vertrauensniveau „${code.vars.niveau}“ nötig`);
   } else {
     if (!quiet) await C.log(code.id, null, 'server', 'ok', 'Decoding erfolgreich');
   }
-  return { ok: true, steps, code: publicCode(code), methods: code.type === 'PAY' ? METHODS : undefined };
+  return { ok: true, steps, code: publicCode(code), auth: type.auth, methods: code.type === 'PAY' ? METHODS : undefined,
+    idents: type.auth === 'ident' ? allowedIdents(code) : undefined };
 }
 
 function publicCode(code) {
-  const out = { id: code.id, type: code.type, label: code.label, vars: code.vars };
+  const out = { id: code.id, type: code.type, label: code.label, vars: C.publicVars(code.type, code.vars) };
   if (code.type === 'PAY') out.total = code.vars.betrag + code.vars.gebuehr;
   return out;
 }
@@ -102,15 +128,25 @@ function publicPayment(p) {
 }
 
 // Zahlung starten: Daten kommen aus der Datenbank, nie vom Handy
-async function start(token, methodId, source = 'handy') {
+async function start(token, methodId, source = 'handy', session) {
   const res = await decode(token, { count: false, quiet: true });
   if (!res.ok) throw Object.assign(new Error(res.error), { status: 400 });
   if (res.alreadyPaid) throw Object.assign(new Error('Dieser Code ist bereits bezahlt.'), { status: 409 });
-  if (res.code.type !== 'PAY') throw Object.assign(new Error('Kein Zahlungscode'), { status: 400 });
   const method = METHOD[methodId];
   if (!method) throw Object.assign(new Error('Unbekannte Zahlart'), { status: 400 });
 
-  const { betrag, gebuehr } = res.code.vars;
+  let betrag, gebuehr;
+  if (res.code.type === 'PAY') {
+    ({ betrag, gebuehr } = res.code.vars);
+  } else if (res.code.type === 'KONTO') {
+    const code = await C.getCode(res.code.id);
+    if (!C.verifySession(session, code)) throw Object.assign(new Error('Anmeldung abgelaufen. Bitte erneut anmelden.'), { status: 401 });
+    const { open } = await kontoState(code);
+    if (!open) throw Object.assign(new Error('Es ist kein Betrag offen.'), { status: 409 });
+    betrag = open; gebuehr = 0;
+  } else {
+    throw Object.assign(new Error('Kein Zahlungscode'), { status: 400 });
+  }
   const id = `ZA-${C.rid(8)}`;
   const t = C.now();
   await db.run(`INSERT INTO payments (id, code_id, method, amount, fee, total, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'gestartet', ?, ?)`,
@@ -141,6 +177,18 @@ async function complete(paymentId, result, reason) {
   await C.log(p.code_id, p.id, 'anbieter', o.kind, `${name} sendet Webhook „${o.hook}“${reason ? `: ${reason}` : ''}`, { ref, betrag: p.total });
 
   if (o.status === 'bezahlt') {
+    if (code.type === 'KONTO') {
+      // Ausgleichszahlung: darf nicht mehr sein als aktuell offen ist
+      const { open } = await kontoState(code);
+      if (p.total > open) {
+        await setPayment(p.id, 'abgelehnt', 'Der Betrag war inzwischen schon ausgeglichen, Betrag wird erstattet', ref);
+        await C.log(p.code_id, p.id, 'server', 'fehler', `Überzahlung erkannt (offen nur noch ${eur(open)}), Erstattung wird ausgelöst`);
+        return { redirect: `/ergebnis/${p.id}` };
+      }
+      await setPayment(p.id, 'bezahlt', null, ref);
+      await C.log(p.code_id, p.id, 'server', 'ok', `Ausgleichszahlung ${eur(p.total)} verbucht, neuer Kontostand ${eur((await kontoState(code)).saldo)}`);
+      return { redirect: `/ergebnis/${p.id}` };
+    }
     // Doppelzahlung verhindern: Code inzwischen anders bezahlt oder geändert?
     const other = await paidPayment(p.code_id);
     if (code.single_use && other) {
@@ -171,4 +219,4 @@ async function paymentsFor(codeId) {
   return (await db.all('SELECT * FROM payments WHERE code_id = ? ORDER BY created_at DESC', [codeId])).map(publicPayment);
 }
 
-module.exports = { METHODS, METHOD, decode, start, complete, getPayment, publicPayment, paymentsFor, expireStale };
+module.exports = { METHODS, METHOD, IDENTS, allowedIdents, kontoState, decode, start, complete, getPayment, publicPayment, paymentsFor, expireStale };

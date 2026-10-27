@@ -14,18 +14,38 @@ const rid = (n) => {
 // --- Code-Arten -----------------------------------------------------------
 
 async function listTypes() {
-  return (await db.all('SELECT * FROM code_types ORDER BY id')).map((t) => ({ ...t, schema: JSON.parse(t.schema) }));
+  const order = Object.keys(db.TYPES);
+  return (await db.all('SELECT * FROM code_types')).map((t) => ({ ...t, schema: JSON.parse(t.schema), auth: db.TYPES[t.id]?.auth || null }))
+    .sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
 }
 async function getType(id) {
   const t = await db.get('SELECT * FROM code_types WHERE id = ?', [id]);
-  return t && { ...t, schema: JSON.parse(t.schema) };
+  return t && { ...t, schema: JSON.parse(t.schema), auth: db.TYPES[t.id]?.auth || null };
 }
 
-// "49,90" -> 4990
+// "49,90" -> 4990, "-45,20" -> -4520
 function parseMoney(v) {
-  const s = String(v ?? '').trim().replace(/\s|€/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.');
+  let s = String(v ?? '').trim().replace(/\s|€/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.').replace(/^−/, '-');
+  const neg = s.startsWith('-');
+  if (neg) s = s.slice(1);
   if (!/^\d+(\.\d{1,2})?$/.test(s)) return NaN;
-  return Math.round(parseFloat(s) * 100);
+  return (neg ? -1 : 1) * Math.round(parseFloat(s) * 100);
+}
+
+// "14.03.1985" | "1985-03-14" -> "1985-03-14"
+function parseDate(v) {
+  const s = String(v ?? '').trim();
+  let m = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+  const iso = m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : (/^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null);
+  if (!iso) return null;
+  const d = new Date(`${iso}T00:00:00Z`);
+  return !isNaN(d) && d.toISOString().slice(0, 10) === iso ? iso : null;
+}
+
+// Geheime Variablen (Geburtsdatum, Name, Adresse, Kontostand) stehen nur in der Datenbank, nie im QR-Code
+function publicVars(typeId, vars) {
+  const secret = new Set((db.TYPES[typeId]?.schema || []).filter((f) => f.secret).map((f) => f.key));
+  return Object.fromEntries(Object.entries(vars).filter(([k]) => !secret.has(k)));
 }
 
 // Prüft und normalisiert Variablen nach dem Schema der Code-Art. Geldbeträge werden in Cent gespeichert.
@@ -48,6 +68,20 @@ function validateVars(type, input) {
       if (!Number.isInteger(c) || c < 0 || (f.kind === 'money' && c === 0)) errors[f.key] = 'Ungültiger Betrag';
       else if (c > 10_000_00) errors[f.key] = 'Maximal 10.000 €';
       else out[f.key] = c;
+    } else if (f.kind === 'moneySigned') {
+      const c = typeof raw === 'number' && Number.isInteger(raw) ? raw : parseMoney(s);
+      if (!Number.isInteger(c) || Math.abs(c) > 10_000_00) errors[f.key] = 'Ungültiger Betrag';
+      else out[f.key] = c;
+    } else if (f.kind === 'date') {
+      const d = parseDate(s);
+      if (!d) errors[f.key] = 'Datum als TT.MM.JJJJ';
+      else out[f.key] = d;
+    } else if (f.kind === 'plz') {
+      if (!/^\d{5}$/.test(s)) errors[f.key] = '5 Ziffern';
+      else out[f.key] = s;
+    } else if (f.kind === 'select') {
+      if (!f.options.some(([v]) => v === s)) errors[f.key] = 'Bitte auswählen';
+      else out[f.key] = s;
     } else if (f.kind === 'url') {
       if (/^\/[\w\-/]*$/.test(s)) out[f.key] = s; // Seite dieser App, z. B. /info
       else try { const u = new URL(s); if (!/^https?:$/.test(u.protocol)) throw 0; out[f.key] = u.href; } catch { errors[f.key] = 'https://… oder /info'; }
@@ -118,6 +152,8 @@ async function setStatus(id, status, message) {
 async function deleteCode(id) {
   await db.run('DELETE FROM events WHERE code_id = ?', [id]);
   await db.run('DELETE FROM payments WHERE code_id = ?', [id]);
+  await db.run('DELETE FROM submissions WHERE code_id = ?', [id]);
+  await db.run('DELETE FROM auth_state WHERE code_id = ?', [id]);
   await db.run('DELETE FROM codes WHERE id = ?', [id]);
 }
 
@@ -125,7 +161,7 @@ async function deleteCode(id) {
 // Inhalt: base64url(JSON) + "." + HMAC-SHA256. Die Daten stehen lesbar im Code, sind aber nicht fälschbar.
 
 function tokenFor(code) {
-  const payload = { v: 1, id: code.id, t: code.type, n: code.version, d: code.vars };
+  const payload = { v: 1, id: code.id, t: code.type, n: code.version, d: publicVars(code.type, code.vars) };
   const body = b64u(JSON.stringify(payload));
   return `${body}.${hmac(body)}`;
 }
@@ -142,6 +178,20 @@ function decodeToken(token) {
   return { body, sig, payload, sigOk };
 }
 
+// Sitzung nach erfolgreicher Anmeldung: kurzlebig, an Code und Version gebunden
+function sessionFor(code, level, minutes = 10) {
+  const body = b64u(JSON.stringify({ id: code.id, n: code.version, l: level, exp: Date.now() + minutes * 60e3 }));
+  return `${body}.${hmac(`sess:${body}`)}`;
+}
+function verifySession(session, code) {
+  const [body, sig] = String(session || '').split('.');
+  if (!body || !sig) return null;
+  const a = Buffer.from(sig), b = Buffer.from(hmac(`sess:${body}`));
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  const s = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
+  return s.id === code.id && s.n === code.version && s.exp > Date.now() ? s : null;
+}
+
 // --- Statuslog --------------------------------------------------------------
 
 async function log(codeId, paymentId, actor, kind, message, data) {
@@ -155,7 +205,7 @@ async function events(codeId, afterId = 0) {
 }
 
 module.exports = {
-  listTypes, getType, parseMoney, validateVars,
+  listTypes, getType, parseMoney, parseDate, validateVars, publicVars, sessionFor, verifySession, SECRET,
   getCode, listCodes, createCode, updateCode, setStatus, deleteCode,
   tokenFor, decodeToken, log, events, rid, now,
 };

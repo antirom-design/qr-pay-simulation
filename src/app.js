@@ -6,6 +6,7 @@ const QRCode = require('qrcode');
 const db = require('./db');
 const C = require('./codes');
 const P = require('./payments');
+const F = require('./flows');
 const views = require('./views');
 
 const PUBLIC = path.join(__dirname, '..', 'public');
@@ -32,7 +33,7 @@ const json = (res, status, data) => send(res, status, JSON.stringify(data), 'app
 async function body(req) {
   if (req.body !== undefined) return typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body; // Vercel parst schon
   let raw = '';
-  for await (const chunk of req) { raw += chunk; if (raw.length > 1e5) throw Object.assign(new Error('Zu groß'), { status: 413 }); }
+  for await (const chunk of req) { raw += chunk; if (raw.length > 5e6) throw Object.assign(new Error('Zu groß'), { status: 413 }); }
   return raw ? JSON.parse(raw) : {};
 }
 
@@ -106,8 +107,8 @@ route('POST', /^\/api\/codes\/([\w-]+)\/status$/, async (req, res, [id]) => {
 }, { admin: true });
 route('GET', /^\/api\/codes\/([\w-]+)\/events$/, async (req, res, [id]) => {
   const after = Number(new URL(req.url, 'http://x').searchParams.get('after') || 0);
-  const [events, payments, code] = await Promise.all([C.events(id, after), P.paymentsFor(id), C.getCode(id)]);
-  json(res, 200, { events, payments, status: code?.status });
+  const [events, payments, submissions, code] = await Promise.all([C.events(id, after), P.paymentsFor(id), F.submissionsFor(id), C.getCode(id)]);
+  json(res, 200, { events, payments, submissions, status: code?.status });
 }, { admin: true });
 
 // --- API: Service 2, Bezahlstrecke -------------------------------------------
@@ -117,9 +118,47 @@ route('POST', /^\/api\/decode$/, async (req, res) => {
   json(res, 200, await P.decode(token, { source: source === 'simulation' ? 'simulation' : 'handy' }));
 });
 route('POST', /^\/api\/pay$/, async (req, res) => {
-  const { token, method, source } = await body(req);
-  json(res, 200, await P.start(token, method, source === 'simulation' ? 'simulation' : 'handy'));
+  const { token, method, source, session } = await body(req);
+  json(res, 200, await P.start(token, method, src(source), session));
 });
+
+// --- API: weitere Usecases (Anmeldung, Adresse, Dokument) ----------------------------
+
+const src = (s) => (s === 'simulation' ? 'simulation' : 'handy');
+route('POST', /^\/api\/login$/, async (req, res) => {
+  const { token, geburtsdatum, source } = await body(req);
+  json(res, 200, await F.loginBirthdate(token, geburtsdatum, src(source)));
+});
+route('POST', /^\/api\/ident$/, async (req, res) => {
+  const { token, method, outcome, source } = await body(req);
+  json(res, 200, await F.ident(token, method, outcome, src(source)));
+});
+route('POST', /^\/api\/schritt$/, async (req, res) => {
+  // Zwischenschritte der simulierten Ident-Verfahren im Statuslog sichtbar machen
+  const { token, text, actor } = await body(req);
+  const d = C.decodeToken(token);
+  if (!d.sigOk) return json(res, 400, { ok: false });
+  await C.log(d.payload.id, null, ['handy', 'simulation'].includes(actor) ? actor : 'anbieter', 'info', String(text).slice(0, 100));
+  json(res, 200, { ok: true });
+});
+route('POST', /^\/api\/adresse$/, async (req, res) => {
+  const { token, session, source, ...input } = await body(req);
+  json(res, 200, await F.changeAddress(token, session, input, src(source)));
+});
+route('POST', /^\/api\/dokument$/, async (req, res) => {
+  const { token, session, source, ...input } = await body(req);
+  json(res, 200, await F.uploadDocument(token, session, input, src(source)));
+});
+route('GET', /^\/api\/eingang\/([\w-]+)$/, async (req, res, [id]) => {
+  const s = await F.submission(id);
+  if (!s) return json(res, 404, { error: 'Nicht gefunden' });
+  json(res, 200, s);
+}, { admin: true });
+route('GET', /^\/api\/eingang\/([\w-]+)\/datei$/, async (req, res, [id]) => {
+  const { meta, buf } = await F.submissionFile(id);
+  res.writeHead(200, { 'Content-Type': meta.mime, 'Content-Disposition': `inline; filename*=UTF-8''${encodeURIComponent(meta.filename)}`, 'Cache-Control': 'no-store' });
+  res.end(buf);
+}, { admin: true });
 route('POST', /^\/api\/anbieter\/([\w-]+)$/, async (req, res, [pid]) => {
   const { result, reason } = await body(req);
   json(res, 200, await P.complete(pid, result, reason && String(reason).slice(0, 120)));

@@ -8,7 +8,8 @@
   const kdnr = (s) => String(s || '').replace(/(\d{4})(?=\d)/g, '$1 ');
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   const post = (url, data) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
-    .then(async (r) => { const j = await r.json(); if (!r.ok) throw new Error(j.error || 'Fehler'); return j; });
+    .then(async (r) => { const j = await r.json(); if (!r.ok) throw Object.assign(new Error(j.error || 'Fehler'), { status: r.status, errors: j.errors }); return j; });
+  let session = null;
 
   const MARK = {
     paypal: ['PP', '#003087', '#fff'], wero: ['w', '#1d1d1b', '#ffe94d'], bank: ['🏦', '#e8eef9', '#0f1b2d'], card: ['💳', '#eef2f7', '#0f1b2d'],
@@ -48,6 +49,9 @@
     await wait(450);
     if (!res.ok) return showError('Code nicht gültig', res.error, res.steps);
     if (res.alreadyPaid) return showPaid(res);
+    if (res.alreadyDone) return showDone(res);
+    if (res.auth === 'geburtsdatum') return window.QRFlows.login(res);
+    if (res.auth === 'ident') return window.QRFlows.dokIntro(res);
     if (res.code.type === 'INFO') return showInfo(res);
     showCheckout(res);
   }
@@ -104,7 +108,7 @@
     ov.innerHTML = `<div class="spinner"></div><p>Weiterleitung zu ${esc(name)} …</p>`;
     document.body.appendChild(ov);
     try {
-      const [r] = await Promise.all([post('/api/pay', { token, method, source }), wait(700)]);
+      const [r] = await Promise.all([post('/api/pay', { token, method, source, session }), wait(700)]);
       location.href = r.redirect;
     } catch (e) {
       ov.remove();
@@ -112,5 +116,14 @@
     }
   }
 
+  function showDone(res) {
+    const d = res.alreadyDone;
+    app.innerHTML = `<section class="result"><div class="status-icon ok"></div><h1 class="r-title">Bereits erledigt</h1>
+      <p class="r-text">Dieser Vorgang wurde${d ? ` am ${new Date(d.createdAt).toLocaleString('de-DE')} abgeschlossen (Vorgang <span class="mono">${esc(d.id)}</span>)` : ' bereits abgeschlossen'}. Du musst nichts weiter tun.</p>
+      ${protocol(res.steps)}</section>`;
+  }
+
+  // Für die weiteren Usecases (flows.js)
+  window.QRPay = { app, token, source, eur, esc, kdnr, wait, post, protocol, showError, choose, mark, setSession: (s) => { session = s; }, restart: run };
   run();
 })();

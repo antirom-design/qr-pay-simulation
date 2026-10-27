@@ -4,6 +4,7 @@
   const eur = (c) => new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format((c || 0) / 100);
   const money = (c) => ((c || 0) / 100).toFixed(2).replace('.', ',');
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const dmy = (iso) => (iso ? iso.slice(0, 10).split('-').reverse().join('.') : '');
   const kdnr = (s) => String(s || '').replace(/(\d{4})(?=\d)/g, '$1 ');
   const time = (iso) => new Date(iso).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const api = async (url, opts = {}) => {
@@ -15,7 +16,7 @@
   const toast = (t) => { const el = $('#toast'); el.textContent = t; el.classList.add('on'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('on'), 2600); };
 
   let types = [], codes = [], info = {}, filter = 'alle';
-  const STATUS = { aktiv: 'Aktiv', deaktiviert: 'Deaktiviert', bezahlt: 'Bezahlt' };
+  const STATUS = { aktiv: 'Aktiv', deaktiviert: 'Deaktiviert', bezahlt: 'Bezahlt', erledigt: 'Erledigt' };
   const PSTATUS = { gestartet: 'läuft', bezahlt: 'bezahlt', abgebrochen: 'abgebrochen', abgelehnt: 'abgelehnt', 'zeitüberschreitung': 'Timeout' };
   const randomKdnr = () => Array.from({ length: 12 }, (_, i) => (i === 0 ? 1 + Math.floor(Math.random() * 9) : Math.floor(Math.random() * 10))).join('');
 
@@ -24,27 +25,38 @@
   function fieldsHtml(type, values = {}) {
     return type.schema.map((f) => {
       let v = values[f.key];
-      if ((f.kind === 'money' || f.kind === 'money0') && Number.isInteger(v)) v = money(v);
-      const mode = f.kind === 'digits12' ? 'numeric' : f.kind.startsWith('money') ? 'decimal' : f.kind === 'url' ? 'url' : 'text';
-      return `<label class="f" data-key="${f.key}">${esc(f.label)}${f.required ? '' : ' <i>optional</i>'}
-        <input name="${f.key}" value="${esc(v ?? '')}" inputmode="${mode}" placeholder="${esc(f.hint || '')}" ${f.kind === 'digits12' ? 'maxlength="15"' : ''} autocomplete="off">
+      if (f.kind.startsWith('money') && Number.isInteger(v)) v = (v < 0 ? '-' : '') + money(Math.abs(v));
+      if (f.kind === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(v || '')) v = dmy(v);
+      const mode = ['digits12', 'plz'].includes(f.kind) ? 'numeric' : f.kind.startsWith('money') ? 'text' : f.kind === 'url' ? 'url' : 'text';
+      const lock = f.secret ? ' <span class="lock-tag" title="Steht nur in der Datenbank, nie im QR-Code">🔒 nicht im QR</span>' : '';
+      const input = f.kind === 'select'
+        ? `<select name="${f.key}">${f.options.map(([o, l]) => `<option value="${o}" ${o === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`
+        : `<input name="${f.key}" value="${esc(v ?? '')}" inputmode="${mode}" placeholder="${esc(f.hint || '')}" ${f.kind === 'digits12' ? 'maxlength="15"' : ''} autocomplete="off">`;
+      return `<label class="f" data-key="${f.key}">${esc(f.label)}${f.required ? '' : ' <i>optional</i>'}${lock}
+        ${input}
         <em class="err"></em></label>`;
     }).join('');
   }
 
   function renderCreate(typeId = 'PAY') {
     const type = types.find((t) => t.id === typeId);
-    const sample = typeId === 'PAY'
-      ? { kundennummer: randomKdnr(), betrag: '49,90', gebuehr: '1,50', zweck: `Rechnung 2026-${100 + Math.floor(Math.random() * 900)}` }
-      : { titel: 'So funktioniert QR-Pay', url: '/info' };
+    const SAMPLES = {
+      PAY: { kundennummer: randomKdnr(), betrag: '49,90', gebuehr: '1,50', zweck: `Rechnung 2026-${100 + Math.floor(Math.random() * 900)}` },
+      KONTO: { kundennummer: randomKdnr(), name: 'Max Mustermann', geburtsdatum: '14.03.1985', kontostand: '-45,20' },
+      ADR: { kundennummer: randomKdnr(), name: 'Max Mustermann', geburtsdatum: '14.03.1985', strasse: 'Hauptstraße 12', plz: '50667', ort: 'Köln' },
+      DOK: { kundennummer: randomKdnr(), dokument: 'Befreiungsbescheinigung 2027', frist: dmy(new Date(Date.now() + 14 * 864e5).toISOString()), niveau: 'substanziell', name: 'Max Mustermann', geburtsdatum: '14.03.1985' },
+      INFO: { titel: 'So funktioniert QR-Pay', url: '/info' },
+    };
+    const sample = SAMPLES[typeId] || {};
+    const LABELS = { PAY: 'Rechnung Kunde', KONTO: 'Kontostand Kunde', ADR: 'Adressänderung Kunde', DOK: 'Nachweis anfordern', INFO: 'Info-Link' };
     $('#create-form').innerHTML = `
       <label class="f">Code-Art
         <select name="type">${types.map((t) => `<option value="${t.id}" ${t.id === typeId ? 'selected' : ''}>${t.id} · ${esc(t.name)}</option>`).join('')}</select></label>
-      <label class="f">Bezeichnung <i>intern</i><input name="label" value="${typeId === 'PAY' ? 'Rechnung Kunde' : 'Info-Link'}" autocomplete="off"></label>
+      <label class="f">Bezeichnung <i>intern</i><input name="label" value="${LABELS[typeId] || type.name}" autocomplete="off"></label>
       <div class="vars">${fieldsHtml(type, sample)}</div>
       <div class="f-row">
         <label class="f">Gültig<select name="validDays"><option value="0">unbegrenzt</option><option value="1">1 Tag</option><option value="7" selected>7 Tage</option><option value="30">30 Tage</option></select></label>
-        <label class="check"><input type="checkbox" name="singleUse" ${typeId === 'PAY' ? 'checked' : ''}> Einmal-Code<small>nach Zahlung gesperrt</small></label>
+        <label class="check"><input type="checkbox" name="singleUse" ${['PAY', 'ADR', 'DOK'].includes(typeId) ? 'checked' : ''}> Einmal-Code<small>nach Abschluss gesperrt</small></label>
       </div>
       <div class="sum-preview" id="preview"></div>
       <div class="row"><button class="btn" type="submit">Code anlegen</button><button class="btn ghost" type="button" id="randomize">Neue Beispieldaten</button></div>`;
@@ -95,11 +107,16 @@
       return `<div class="c-vars"><span>Kd-Nr. <b class="mono">${kdnr(v.kundennummer)}</b></span>
         <span>${eur(v.betrag)} + ${eur(v.gebuehr)} Gebühr = <b>${eur(v.betrag + v.gebuehr)}</b></span>${v.zweck ? `<span>${esc(v.zweck)}</span>` : ''}</div>`;
     }
-    return `<div class="c-vars"><span><b>${esc(c.vars.titel)}</b></span><span class="mono small">${esc(c.vars.url)}</span></div>`;
+    const v = c.vars;
+    const kd = `<span>Kd-Nr. <b class="mono">${kdnr(v.kundennummer)}</b></span>`;
+    if (c.type === 'KONTO') return `<div class="c-vars">${kd}<span>${esc(v.name)}</span><span>Kontostand <b class="${v.kontostand < 0 ? 'neg' : ''}">${eur(v.kontostand)}</b></span><span class="muted">🔒 Geb. ${dmy(v.geburtsdatum)}</span></div>`;
+    if (c.type === 'ADR') return `<div class="c-vars">${kd}<span>${esc(v.name)}</span><span>${esc(v.strasse)}, ${esc(v.plz)} ${esc(v.ort)}</span><span class="muted">🔒 Geb. ${dmy(v.geburtsdatum)}</span></div>`;
+    if (c.type === 'DOK') return `<div class="c-vars">${kd}<span><b>${esc(v.dokument)}</b></span>${v.frist ? `<span>Frist ${dmy(v.frist)}</span>` : ''}<span>Niveau ${esc(v.niveau)}</span><span class="muted">🔒 ${esc(v.name)}, ${dmy(v.geburtsdatum)}</span></div>`;
+    return `<div class="c-vars"><span><b>${esc(v.titel)}</b></span><span class="mono small">${esc(v.url)}</span></div>`;
   }
 
   function renderCodes() {
-    const list = codes.filter((c) => filter === 'alle' || c.status === filter);
+    const list = codes.filter((c) => filter === 'alle' || c.status === filter || (filter === 'bezahlt' && c.status === 'erledigt'));
     if (!codes.length) {
       $('#codes').innerHTML = `<div class="empty"><p>Noch keine Codes. Lege links einen an oder starte mit Beispielen.</p><button class="btn" id="seed">Beispiel-Codes anlegen</button></div>`;
       $('#seed').onclick = seed;
@@ -114,7 +131,7 @@
         <div class="c-main">
           <div class="c-top"><span class="c-id mono">${c.id}</span><span class="badge s-${c.status}">${STATUS[c.status]}</span>${expired ? '<span class="badge s-deaktiviert">abgelaufen</span>' : ''}<span class="c-label">${esc(c.label)}</span></div>
           ${summary(c)}
-          <div class="c-meta"><span>v${c.version}</span><span>${c.scans} Scans</span>${c.type === 'PAY' ? `<span>${c.attempts} Zahlversuche${c.last_payment ? `, zuletzt ${PSTATUS[c.last_payment]}` : ''}</span>` : ''}
+          <div class="c-meta"><span>v${c.version}</span><span>${c.scans} Scans</span>${['PAY', 'KONTO'].includes(c.type) ? `<span>${c.attempts} Zahlversuche${c.last_payment ? `, zuletzt ${PSTATUS[c.last_payment]}` : ''}</span>` : ''}
             <span>${c.expires_at ? `gültig bis ${new Date(c.expires_at).toLocaleDateString('de-DE')}` : 'unbegrenzt'}</span>${c.single_use ? '<span>Einmal-Code</span>' : ''}</div>
           <div class="c-actions">
             <button class="btn sm" data-act="sim" data-id="${c.id}">▶ Simulation starten</button>
@@ -122,7 +139,7 @@
             <button class="btn ghost sm" data-act="log" data-id="${c.id}">Verlauf</button>
             <button class="btn ghost sm" data-act="edit" data-id="${c.id}">Bearbeiten</button>
             ${c.status === 'aktiv' ? `<button class="btn ghost sm" data-act="off" data-id="${c.id}">Deaktivieren</button>`
-              : `<button class="btn ghost sm" data-act="on" data-id="${c.id}">${c.status === 'bezahlt' ? 'Wieder öffnen' : 'Aktivieren'}</button>`}
+              : `<button class="btn ghost sm" data-act="on" data-id="${c.id}">${['bezahlt', 'erledigt'].includes(c.status) ? 'Wieder öffnen' : 'Aktivieren'}</button>`}
             <button class="btn ghost sm danger" data-act="del" data-id="${c.id}" aria-label="Löschen">Löschen</button>
           </div>
         </div>
@@ -158,6 +175,10 @@
     await api('/api/codes', { method: 'POST', body: { type: 'INFO', label: 'Infoseite', vars: { titel: 'So funktioniert QR-Pay', url: '/info' }, validDays: 0, singleUse: false } });
     const k = randomKdnr();
     await api('/api/codes', { method: 'POST', body: { type: 'PAY', label: 'Stromrechnung Oktober', vars: { kundennummer: k, betrag: '89,40', gebuehr: '1,50', zweck: 'Rechnung 2026-104' }, validDays: 7, singleUse: true } });
+    const frist = new Date(Date.now() + 14 * 864e5).toISOString().slice(0, 10);
+    await api('/api/codes', { method: 'POST', body: { type: 'DOK', label: 'Zuzahlungsbefreiung', vars: { kundennummer: randomKdnr(), dokument: 'Befreiungsbescheinigung 2027', frist, niveau: 'substanziell', name: 'Max Mustermann', geburtsdatum: '1985-03-14' }, validDays: 30, singleUse: true } });
+    await api('/api/codes', { method: 'POST', body: { type: 'ADR', label: 'Adressänderung', vars: { kundennummer: k, name: 'Max Mustermann', geburtsdatum: '1985-03-14', strasse: 'Hauptstraße 12', plz: '50667', ort: 'Köln' }, validDays: 30, singleUse: true } });
+    await api('/api/codes', { method: 'POST', body: { type: 'KONTO', label: 'Kundenkonto', vars: { kundennummer: k, name: 'Max Mustermann', geburtsdatum: '1985-03-14', kontostand: -4520 }, validDays: 0, singleUse: false } });
     await api('/api/codes', { method: 'POST', body: { type: 'PAY', label: 'Werkstatt Inspektion', vars: { kundennummer: randomKdnr(), betrag: '249,00', gebuehr: '2,90', zweck: 'Auftrag 5531' }, validDays: 30, singleUse: true } });
     await loadCodes();
   }
@@ -202,6 +223,10 @@
       log.appendChild(li);
     }
     if (r.events.length) log.scrollTop = log.scrollHeight;
+    const subs = (r.submissions || []).map((x) => x.kind === 'adresse'
+      ? `<tr><td class="mono">${esc(x.id)}</td><td>Adresse</td><td colspan="2">${esc(x.alt.strasse)}, ${esc(x.alt.plz)} ${esc(x.alt.ort)} → <b>${esc(x.neu.strasse)}, ${esc(x.neu.plz)} ${esc(x.neu.ort)}</b> ab ${dmy(x.neu.ab)}</td></tr>`
+      : `<tr><td class="mono">${esc(x.id)}</td><td>Dokument</td><td><a href="/api/eingang/${esc(x.id)}/datei" target="_blank" rel="noopener">${esc(x.filename)}</a> · ${Math.max(1, Math.round(x.size / 1024))} KB</td><td><span class="badge p-bezahlt">${esc(x.ident)} · ${esc(x.niveau)}</span></td></tr>`).join('');
+    $('#sim-subs').innerHTML = subs ? `<h4>Eingänge (verschlüsselt gespeichert)</h4><table><tbody>${subs}</tbody></table>` : '';
     $('#sim-payments').innerHTML = r.payments.length ? `<h4>Zahlungen zu diesem Code</h4><table><tbody>${r.payments.map((p) =>
       `<tr><td class="mono">${esc(p.id)}</td><td>${esc(p.methodName)}</td><td>${eur(p.total)}</td><td><span class="badge p-${p.status}">${PSTATUS[p.status]}</span></td></tr>`).join('')}</tbody></table>` : '';
   }
@@ -262,7 +287,7 @@
     [info, types] = await Promise.all([api('/api/info'), api('/api/types')]);
     $('#meta').innerHTML = `<span title="Adresse, die in den QR-Codes steht">QR zeigt auf <b class="mono">${esc(new URL(info.baseUrl).host)}</b></span><span${/temporär/.test(info.db) ? " style=\"color:#fbbf24\"" : ""}>DB: ${esc(info.db)}</span>`;
     $('#types').innerHTML = types.map((t) => `<div class="type"><span class="badge type-badge">${t.id}</span><div><b>${esc(t.name)}</b><p>${esc(t.description)}</p>
-      <small>Variablen: ${t.schema.map((f) => `${esc(f.label.replace(/ \(.*\)/, ''))}${f.required ? '' : ' (optional)'}`).join(', ')}</small></div></div>`).join('');
+      <small>Variablen: ${t.schema.map((f) => `${esc(f.label.replace(/ \(.*\)/, ''))}${f.secret ? ' 🔒' : ''}${f.required ? '' : ' (optional)'}`).join(', ')}${t.auth ? ` · Anmeldung: ${t.auth === 'ident' ? 'Ident-Verfahren' : 'Geburtsdatum'}` : ''}</small></div></div>`).join('');
     renderCreate('PAY');
     await loadCodes();
   }

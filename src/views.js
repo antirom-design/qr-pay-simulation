@@ -54,7 +54,7 @@ function manager() {
       <div class="card-head">
         <h2>Codes</h2>
         <div class="filters" role="tablist" id="filters">
-          <button data-f="alle" class="on">Alle</button><button data-f="aktiv">Aktiv</button><button data-f="bezahlt">Bezahlt</button><button data-f="deaktiviert">Deaktiviert</button>
+          <button data-f="alle" class="on">Alle</button><button data-f="aktiv">Aktiv</button><button data-f="bezahlt">Erledigt</button><button data-f="deaktiviert">Deaktiviert</button>
         </div>
       </div>
       <div id="codes" class="codes"><p class="empty">Lade …</p></div>
@@ -77,6 +77,7 @@ function manager() {
       <div class="log-head"><div><h3 id="sim-title">Simulation</h3><small id="sim-sub"></small></div><button class="x" data-close aria-label="Schließen">×</button></div>
       <div class="log-legend"><span class="a-manager">Manager</span><span class="a-handy">Handy</span><span class="a-server">Server</span><span class="a-anbieter">Anbieter</span></div>
       <ol id="sim-log" class="log"></ol>
+      <div id="sim-subs" class="pay-hist"></div>
       <div id="sim-payments" class="pay-hist"></div>
     </div>
   </div>
@@ -101,11 +102,11 @@ function manager() {
 }
 
 function pay(token) {
-  return page('Bezahlen', 'mobile', `${SIM_BADGE}<main id="app" class="m-wrap" data-token="${esc(token)}"></main>`, ['pay.js']);
+  return page('QR-Code', 'mobile', `${SIM_BADGE}<main id="app" class="m-wrap" data-token="${esc(token)}"></main>`, ['flows.js', 'pay.js']);
 }
 
 function provider(method, payment, code) {
-  const cfg = { method: method.id, name: method.name, payment, merchant: 'Muster GmbH', customer: code?.vars?.kundennummer, zweck: code?.vars?.zweck };
+  const cfg = { method: method.id, name: method.name, payment, merchant: 'Muster GmbH', customer: code?.vars?.kundennummer, zweck: code?.vars?.zweck || (code?.type === 'KONTO' ? 'Ausgleich Kundenkonto' : undefined) };
   return page(`${method.name} · Checkout`, `mobile prov prov-${method.id}`,
     `${SIM_BADGE}<main id="app" class="m-wrap"></main><script>window.CHECKOUT=${JSON.stringify(cfg).replace(/</g, '\\u003c')}</script>`, ['provider.js']);
 }
@@ -137,13 +138,14 @@ function result(p, code, token) {
       <dt class="sum">Bezahlt</dt><dd class="sum">${eur(p.total)}</dd>
       <dt>Zahlart</dt><dd>${esc(p.methodName)}</dd>
       <dt>Kundennummer</dt><dd class="mono">${kdnr(code?.vars?.kundennummer)}</dd>
-      ${code?.vars?.zweck ? `<dt>Zweck</dt><dd>${esc(code.vars.zweck)}</dd>` : ''}
+      ${code?.vars?.zweck ? `<dt>Zweck</dt><dd>${esc(code.vars.zweck)}</dd>` : code?.type === 'KONTO' ? '<dt>Zweck</dt><dd>Ausgleich Kundenkonto</dd>' : ''}
       <dt>Beleg-Nr.</dt><dd class="mono">${esc(p.id)}</dd>
       <dt>Anbieter-Ref.</dt><dd class="mono">${esc(p.providerRef)}</dd>
       <dt>Zeitpunkt</dt><dd>${when}</dd>
     </dl>
   </section>
   <button class="btn block" onclick="window.print()">Beleg speichern / drucken</button>
+  ${code?.type === 'KONTO' ? `<a class="btn block ghost" style="margin-top:8px" href="/s/${esc(token)}">Zum Kundenkonto</a>` : ''}
   <p class="fine">Eine Bestätigung wurde an Kunde ${kdnr(code?.vars?.kundennummer)} gesendet (simuliert).</p>
   ` : `
   <div class="r-amount"><span>Offen</span><strong>${eur(p.total)}</strong></div>
@@ -184,6 +186,14 @@ function info() {
     <li><b>„Code veraltet“ oder „deaktiviert“:</b> Bitte frag beim Rechnungssteller nach einem neuen Code.</li>
     <li><b>„Bereits bezahlt“:</b> Alles erledigt, den Beleg findest du direkt dort.</li>
   </ul>
+
+  <h2>Was geht noch per QR-Code?</h2>
+  <ul class="facts">
+    <li><b>Kontostand abfragen:</b> Nach Eingabe deines Geburtsdatums siehst du deinen Kontostand und kannst Offenes direkt ausgleichen.</li>
+    <li><b>Adresse ändern:</b> Neue Anschrift eingeben, fertig. Keine Formulare, kein Porto.</li>
+    <li><b>Dokumente sicher einreichen:</b> Zum Beispiel eine Befreiungsbescheinigung. Vorher bestätigst du deine Identität mit Online-Ausweis, Video- oder Bank-Ident.</li>
+  </ul>
+  <p>Geburtsdatum, Adresse und Kontostand stehen nie im QR-Code selbst. Wer nur ein Foto deines Codes hat, sieht davon nichts.</p>
 
   <div class="note-box"><b>Hinweis:</b> Dies ist eine Simulation. Es wird kein echtes Geld bewegt, alle Anbieter-Seiten sind nachgebaut.</div>
 

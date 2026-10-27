@@ -121,6 +121,89 @@ server.listen(0, async () => {
     assert.equal((await call('POST', '/api/decode', { token: r.body.token })).body.code.type, 'INFO');
     ok('Zweite Code-Art INFO funktioniert');
 
+    // --- Geheime Variablen nie im QR ---------------------------------------------
+    r = await call('POST', '/api/codes', { type: 'KONTO', label: 'Konto', vars: { kundennummer: '111122223333', name: 'Max Mustermann', geburtsdatum: '14.03.1985', kontostand: '-45,20' }, singleUse: false });
+    assert.equal(r.status, 201);
+    const konto = r.body;
+    const kpayload = JSON.parse(Buffer.from(konto.token.split('.')[0], 'base64url'));
+    assert.deepEqual(Object.keys(kpayload.d), ['kundennummer']);
+    r = await call('POST', '/api/decode', { token: konto.token });
+    assert.equal(r.body.auth, 'geburtsdatum');
+    assert.equal(r.body.code.vars.geburtsdatum, undefined);
+    ok('KONTO: Geburtsdatum, Name, Kontostand stehen weder im QR noch in der Decode-Antwort');
+
+    // Anmeldung, Fehlversuche, Sperre
+    r = await call('POST', '/api/login', { token: konto.token, geburtsdatum: '01.01.1990' });
+    assert.equal(r.status, 401);
+    assert.match(r.body.error, /Noch 2 Versuche/);
+    r = await call('POST', '/api/login', { token: konto.token, geburtsdatum: '14.03.1985' });
+    assert.equal(r.status, 200);
+    assert.equal(r.body.saldo, -4520);
+    assert.equal(r.body.open, 4520);
+    assert.equal(r.body.name, 'Max M.');
+    ok('KONTO: falsches Geburtsdatum abgelehnt, richtiges zeigt Kontostand -45,20 €');
+
+    r = await call('POST', '/api/pay', { token: konto.token, method: 'paypal' });
+    assert.equal(r.status, 401);
+    r = await call('POST', '/api/pay', { token: konto.token, method: 'paypal', session: (await call('POST', '/api/login', { token: konto.token, geburtsdatum: '1985-03-14' })).body.session });
+    await call('POST', `/api/anbieter/${r.body.paymentId}`, { result: 'success' });
+    r = await call('POST', '/api/login', { token: konto.token, geburtsdatum: '14.03.1985' });
+    assert.equal(r.body.saldo, 0);
+    assert.equal(r.body.open, 0);
+    assert.equal(r.body.bookings.length, 1);
+    ok('KONTO: Ausgleichszahlung nur mit Anmeldung, danach Kontostand 0');
+
+    for (let i = 0; i < 2; i++) await call('POST', '/api/login', { token: konto.token, geburtsdatum: '02.02.1922' });
+    r = await call('POST', '/api/login', { token: konto.token, geburtsdatum: '02.02.1922' });
+    assert.equal(r.status, 423);
+    r = await call('POST', '/api/login', { token: konto.token, geburtsdatum: '14.03.1985' });
+    assert.equal(r.status, 423);
+    ok('KONTO: nach 3 Fehlversuchen gesperrt, auch für das richtige Datum');
+
+    // Adressänderung
+    r = await call('POST', '/api/codes', { type: 'ADR', label: 'Adr', vars: { kundennummer: '111122223333', name: 'Max Mustermann', geburtsdatum: '14.03.1985', strasse: 'Hauptstraße 12', plz: '50667', ort: 'Köln' } });
+    const adr = r.body;
+    r = await call('POST', '/api/login', { token: adr.token, geburtsdatum: '14.03.1985' });
+    assert.equal(r.body.address.ort, 'Köln');
+    const as = r.body.session;
+    r = await call('POST', '/api/adresse', { token: adr.token, session: as, strasse: 'Lindenallee', plz: '123', ort: 'Berlin' });
+    assert.equal(r.status, 400);
+    assert.deepEqual(Object.keys(r.body.errors).sort(), ['plz', 'strasse']);
+    r = await call('POST', '/api/adresse', { token: adr.token, session: as, strasse: 'Lindenallee 7', plz: '10115', ort: 'Berlin' });
+    assert.equal(r.status, 200);
+    assert.equal(r.body.neu.ort, 'Berlin');
+    r = await call('POST', '/api/decode', { token: adr.token });
+    assert.equal(r.body.alreadyDone.kind, 'adresse');
+    ok('ADR: Validierung, Änderung gespeichert, Code danach erledigt');
+
+    // Dokument mit Ident
+    r = await call('POST', '/api/codes', { type: 'DOK', label: 'Dok', vars: { kundennummer: '111122223333', dokument: 'Befreiungsbescheinigung 2027', niveau: 'hoch', name: 'Max Mustermann', geburtsdatum: '14.03.1985' } });
+    const dok = r.body;
+    r = await call('POST', '/api/decode', { token: dok.token });
+    assert.deepEqual(r.body.idents.map((i) => i.id), ['eid']);
+    r = await call('POST', '/api/ident', { token: dok.token, method: 'video', outcome: 'match' });
+    assert.equal(r.status, 400);
+    r = await call('POST', '/api/ident', { token: dok.token, method: 'eid', outcome: 'mismatch' });
+    assert.equal(r.status, 403);
+    r = await call('POST', '/api/dokument', { token: dok.token, session: 'x.y', filename: 'a.pdf', mime: 'application/pdf', data: 'aGFsbG8=' });
+    assert.equal(r.status, 401);
+    ok('DOK: Niveau „hoch“ lässt nur Online-Ausweis zu, falsche Person und fehlende Ident werden abgelehnt');
+
+    r = await call('POST', '/api/ident', { token: dok.token, method: 'eid', outcome: 'match' });
+    assert.equal(r.body.person, 'Max M.');
+    const content = Buffer.from('%PDF-1.4 Testdokument');
+    const sha = require('crypto').createHash('sha256').update(content).digest('hex');
+    r = await call('POST', '/api/dokument', { token: dok.token, session: r.body.session, filename: 'befreiung.pdf', mime: 'application/pdf', sha256: sha, data: content.toString('base64') });
+    assert.equal(r.status, 200);
+    assert.equal(r.body.sha256, sha);
+    const eid = r.body.id;
+    r = await call('GET', `/api/eingang/${eid}/datei`);
+    assert.equal(r.body, content.toString());
+    r = await call('GET', `/api/codes/${dok.id}/events`);
+    assert.equal(r.body.submissions[0].ident, 'eid');
+    assert.equal(r.body.status, 'erledigt');
+    ok('DOK: Upload nach Ident, Prüfsumme, verschlüsselt gespeichert, im Manager wieder lesbar');
+
     console.log(`\nAlle ${n} Tests bestanden.`);
   } catch (e) {
     console.error(e);
