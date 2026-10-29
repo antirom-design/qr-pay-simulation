@@ -27,6 +27,7 @@ body.help {
 .wire { fill: none; stroke: var(--g3); stroke-width: 1.25; }
 .wire.todo { stroke-dasharray: 5 4; }
 .ah { fill: var(--g3); }
+.wl { font-size: 11.5px; fill: var(--g2); }
 
 /* Matrix */
 .mx-wrap { overflow-x: auto; }
@@ -95,7 +96,34 @@ body.help {
 .skt td { color: var(--g2); }
 .skt .sa { color: var(--g3); margin: 0 8px; }
 
+/* Hilfe: Bildschirmskizze */
+.only-m { display: none !important; }
+.sp { fill: #fff; stroke: var(--g4); stroke-width: 1; }
+.stb { fill: var(--g1); }
+.stt { font-size: 13px; font-weight: 600; fill: #fff; }
+.stm { font-size: 11px; fill: var(--g3); white-space: pre; }
+.sh { font-size: 13px; font-weight: 600; fill: var(--g1); }
+.sb, .sq { fill: var(--g5); }
+.sl { stroke: var(--g5); }
+.sm { font-size: 11.5px; fill: var(--g2); }
+.sm.on { fill: var(--g1); font-weight: 600; }
+.sbt rect { fill: #fff; stroke: var(--g4); }
+.sbt text { font-size: 10.5px; fill: var(--g2); text-anchor: middle; }
+.mk circle { fill: var(--hi); }
+.mk text { font-size: 12px; font-weight: 600; fill: #fff; text-anchor: middle; }
+.mkn { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--hi); color: #fff; font-size: 12px; margin-right: 8px; vertical-align: 1px; }
+.skt sup { font-size: 9.5px; color: var(--g3); margin-left: 2px; }
+.skt.tt thead th { font-size: 12.5px; color: var(--g2); font-weight: 600; border-bottom: 1px solid var(--g4); }
+.skt.tt th.mono { font-family: var(--mono); font-size: 13px; }
+.skt.tt td { font-size: 13px; }
+.skt.tt th { width: auto; white-space: nowrap; }
+.skt.tt td:nth-child(3) { width: 55%; }
+@media (max-width: 700px) { .skt.tt th, .skt.tt td { padding-right: 8px; font-size: 12px; } }
+.h-text a { color: var(--hi); }
+
 @media (max-width: 700px) {
+  .only-d { display: none !important; }
+  .only-m { display: block !important; }
   .flow-box { grid-template-columns: 1fr; gap: 8px; }
   .flow-side { position: static; border-left: 0; padding-left: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
   .fs-title { flex: 1 1 100%; margin: 0; }
@@ -105,9 +133,9 @@ body.help {
   .mx { font-size: 13px; }
   .mx th, .mx td { padding: 6px 3px; }
   .mx thead th { font-size: 10.5px; }
-  .skt th, .skt td { display: block; width: auto; border: 0; padding: 0; }
-  .skt th { padding-top: 8px; }
-  .skt td { padding-bottom: 8px; border-bottom: 1px solid var(--g5); font-size: 13px; }
+  .skt:not(.tt) th, .skt:not(.tt) td { display: block; width: auto; border: 0; padding: 0; }
+  .skt:not(.tt) th { padding-top: 8px; }
+  .skt:not(.tt) td { padding-bottom: 8px; border-bottom: 1px solid var(--g5); font-size: 13px; }
   .skt .sa { margin: 0 5px; }
 }
 @media (prefers-reduced-motion: reduce) { .st.now .draw { animation: none; stroke-dashoffset: 0; } }

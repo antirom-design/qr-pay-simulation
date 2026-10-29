@@ -24,7 +24,7 @@ function manager() {
   return page('QR-Pay Simulation', 'manager', `
 <header class="top">
   <div class="brand"><span class="logo" aria-hidden="true"></span><div><strong>QR-Pay</strong><small>Simulation · keine echten Zahlungen</small></div></div>
-  <div class="top-meta"><a href="/hilfe">Hilfe</a><a href="/info">So funktioniert's</a><span id="meta"></span></div>
+  <div class="top-meta"><a href="/konzept">Konzept</a><a href="/hilfe">Hilfe</a><a href="/info">So funktioniert's</a><span id="meta"></span></div>
 </header>
 
 <main class="wrap">
@@ -204,17 +204,22 @@ function info() {
 </main>`);
 }
 
-function help() {
+function concept() {
   return page('QR-Vorgänge · Konzept', 'help', `
 <link rel="stylesheet" href="/static/help.css">
 <header class="top">
   <div class="brand"><a href="/" class="logo" aria-label="Zum Manager"></a><div><strong>QR-Vorgänge</strong><small>Konzept des Services</small></div></div>
-  <nav class="top-meta h-nav"><a href="/">Zum Manager</a></nav>
+  <nav class="top-meta h-nav"><a href="/hilfe">Hilfe</a><a href="/">Zum Generator</a></nav>
 </header>
 <main class="h-wrap">
   <section class="h-sec">
     <h1>QR-Vorgänge</h1>
-    <p class="h-text">Ein QR-Code verweist auf einen Vorgang. Der Service prüft den Code, regelt den Zugang je nach Code-Art und führt den Vorgang aus.</p>
+    <p class="h-text">Die Fachseite beauftragt QR-Codes für ihre Vorgänge und stellt sie über ihre Kanäle zu. Ein QR-Code verweist auf einen Vorgang. Der Service prüft den Code, regelt den Zugang je nach Code-Art und führt den Vorgang aus.</p>
+  </section>
+  <section class="h-sec">
+    <h2>Erzeugung und Zustellung</h2>
+    <div class="h-legend"><span class="lg own">Eigenentwicklung</span><span class="lg ext">Fachseite und Dienstleister</span><span class="lg todo">Nicht gebaut</span></div>
+    <div id="supply"></div>
   </section>
   <section class="h-sec">
     <h2>Komponenten</h2>
@@ -246,7 +251,100 @@ function help() {
     <h2>Nicht gebaut</h2>
     <div class="sk-list" id="sketches"></div>
   </section>
-</main>`, ['help.js']);
+</main>`, ['konzept.js']);
+}
+
+// Hilfe zum Generator: statisch, Code-Arten aus den Typdefinitionen
+const mk = (x, y, n) => `<g class="mk"><circle cx="${x}" cy="${y}" r="11"/><text x="${x}" y="${y + 4}">${n}</text></g>`;
+const bar = (x, y, w) => `<rect class="sb" x="${x}" y="${y}" width="${w}" height="16" rx="3"/>`;
+const sbtn = (x, y, t) => { const w = t.length * 6.6 + 16; return [`<g class="sbt"><rect x="${x}" y="${y}" width="${w}" height="20" rx="4"/><text x="${x + w / 2}" y="${y + 14}">${t}</text></g>`, w]; };
+const btnRow = (x, y, list, maxX) => {
+  let out = '', cx = x, cy = y;
+  for (const t of list) { const [svg, w] = sbtn(cx, cy, t); if (cx + w > maxX) { cx = x; cy += 26; return out + btnRow(x, cy, list.slice(list.indexOf(t)), maxX); } out += svg; cx += w + 6; }
+  return out;
+};
+const ACTIONS = ['Simulation starten', 'QR', 'Verlauf', 'Bearbeiten', 'Deaktivieren', 'Löschen'];
+const codeRow = (x, y, id, maxX) => `<rect class="sq" x="${x}" y="${y}" width="44" height="44" rx="3"/>`
+  + `<text class="sm mono" x="${x + 56}" y="${y + 12}">${id}</text><g class="sbt"><rect x="${x + 56 + id.length * 7.2 + 8}" y="${y + 1}" width="42" height="15" rx="7"/><text x="${x + 56 + id.length * 7.2 + 29}" y="${y + 12}" style="font-size:10px">Aktiv</text></g>`
+  + btnRow(x + 56, y + 24, ACTIONS, maxX);
+const panel = (x, y, w, h, t) => `<rect class="sp" x="${x}" y="${y}" width="${w}" height="${h}" rx="6"/><text class="sh" x="${x + 14}" y="${y + 24}">${t}</text>`;
+const topbar = (w) => `<rect class="stb" x="0" y="0" width="${w}" height="36" rx="6"/><text class="stt" x="16" y="23">QR-Pay</text>`
+  + `<text class="stm" x="${w - 16}" y="23" text-anchor="end">Konzept  Hilfe  So funktioniert's</text>`;
+const tabs = (x, y) => ['Alle', 'Aktiv', 'Erledigt', 'Deaktiviert'].map((t, i) => `<text class="sm${i ? '' : ' on'}" x="${x + [0, 34, 76, 132][i]}" y="${y}">${t}</text>`).join('');
+
+function screenDesktop() {
+  return `<svg class="only-d" viewBox="0 0 1000 300" role="img" aria-label="Aufbau des Generators">${topbar(1000)}`
+    + panel(0, 50, 340, 190, 'Neuen Code anlegen') + [0, 1, 2, 3, 4].map((i) => bar(14, 92 + i * 30, i === 4 ? 140 : 312)).join('') + mk(326, 50, 1)
+    + panel(356, 50, 644, 190, 'Codes') + tabs(720, 74) + mk(990, 50, 2)
+    + codeRow(370, 100, 'PAY-7K2M9Q', 990) + `<line class="sl" x1="370" y1="166" x2="986" y2="166"/>` + codeRow(370, 180, 'KONTO-4HX2', 990) + mk(370, 100, 3)
+    + panel(0, 254, 1000, 46, 'Code-Arten') + mk(990, 254, 4)
+    + '</svg>';
+}
+function screenMobile() {
+  return `<svg class="only-m" viewBox="0 0 360 434" role="img" aria-label="Aufbau des Generators">${topbar(360)}`
+    + panel(0, 50, 360, 180, 'Neuen Code anlegen') + [0, 1, 2, 3, 4].map((i) => bar(14, 88 + i * 30, i === 4 ? 120 : 332)).join('') + mk(348, 50, 1)
+    + panel(0, 244, 360, 130, 'Codes') + tabs(110, 268) + mk(348, 244, 2)
+    + codeRow(14, 288, 'PAY-7K2M9Q', 350) + mk(14, 288, 3)
+    + panel(0, 388, 360, 46, 'Code-Arten') + mk(348, 388, 4)
+    + '</svg>';
+}
+
+function help(TYPES) {
+  const n = (k) => `<span class="mkn">${k}</span>`;
+  const rows = (list) => list.map(([a, b]) => `<tr><th>${a}</th><td>${b}</td></tr>`).join('');
+  const types = Object.values(TYPES).map((t) => `<tr><th class="mono">${esc(t.id)}</th><td>${esc(t.name)}</td>`
+    + `<td>${t.schema.map((f) => `${esc(f.label.replace(/ \(.*\)/, ''))}${f.secret ? '<sup title="Steht nur in der Datenbank, nicht im QR-Code">DB</sup>' : ''}${f.required ? '' : ' (optional)'}`).join(', ')}</td>`
+    + `<td>${t.auth === 'ident' ? 'Identifizierung' : t.auth === 'geburtsdatum' ? 'Geburtsdatum' : '–'}</td></tr>`).join('');
+  return page('QR-Vorgänge · Hilfe', 'help', `
+<link rel="stylesheet" href="/static/help.css">
+<header class="top">
+  <div class="brand"><a href="/" class="logo" aria-label="Zum Generator"></a><div><strong>QR-Vorgänge</strong><small>Hilfe zum Generator</small></div></div>
+  <nav class="top-meta h-nav"><a href="/konzept">Konzept</a><a href="/">Zum Generator</a></nav>
+</header>
+<main class="h-wrap">
+  <section class="h-sec">
+    <h1>Generator</h1>
+    <p class="h-text">Der Generator erzeugt signierte QR-Codes für Vorgänge und zeigt, was beim Aufruf passiert. Im Zielbild beauftragt die Fachseite die Codes, siehe <a href="/konzept">Konzept</a>.</p>
+  </section>
+  <section class="h-sec">
+    <h2>Aufbau</h2>
+    ${screenDesktop()}${screenMobile()}
+  </section>
+  <section class="h-sec">
+    <h2>${n(1)}Code anlegen</h2>
+    <table class="skt"><tbody>${rows([
+      ['Code-Art', 'Legt Variablen, Prüfungen und Ablauf fest. Das Kürzel steht am Anfang der Code-ID.'],
+      ['Bezeichnung', 'Nur intern, für die Liste.'],
+      ['Variablen', 'Je Code-Art. Mit DB markierte Werte stehen nur in der Datenbank, nicht im QR-Code.'],
+      ['Gültig', 'Unbegrenzt, 1, 7 oder 30 Tage. Danach wird der Code abgelehnt.'],
+      ['Einmal-Code', 'Nach Abschluss des Vorgangs gesperrt. Vorbelegt bei PAY, ADR und DOK.'],
+    ])}</tbody></table>
+  </section>
+  <section class="h-sec">
+    <h2>${n(2)}Liste und Status</h2>
+    <table class="skt"><tbody>${rows([
+      ['Aktiv', 'Der Code kann aufgerufen werden.'],
+      ['Bezahlt, Erledigt', 'Vorgang abgeschlossen. Einmal-Codes sind danach gesperrt.'],
+      ['Deaktiviert', 'Von Hand gesperrt. Ein Aufruf wird abgelehnt.'],
+      ['abgelaufen', 'Gültigkeit überschritten. Ein Aufruf wird abgelehnt.'],
+    ])}</tbody></table>
+  </section>
+  <section class="h-sec">
+    <h2>${n(3)}Aktionen je Code</h2>
+    <table class="skt"><tbody>${rows([
+      ['Simulation starten', 'Handy-Ansicht neben dem Verlauf. Der Ablauf entspricht einem echten Aufruf.'],
+      ['QR', 'QR-Code groß, Link kopieren, Inhalt des Codes.'],
+      ['Verlauf', 'Alle Ereignisse zum Code. Mit „Filter an“ nach Kategorie und Komponente filtern und die Auswahl kopieren.'],
+      ['Bearbeiten', 'Bezeichnung, Variablen, Gültigkeit, Einmal-Code. Ändert sich ein Wert, der im QR-Code steht, entsteht eine neue Version. Ältere gedruckte Codes werden dann abgelehnt.'],
+      ['Deaktivieren', 'Sperrt den Code sofort. Aktivieren oder Wieder öffnen gibt ihn frei.'],
+      ['Löschen', 'Entfernt Code, Zahlungen und Verlauf.'],
+    ])}</tbody></table>
+  </section>
+  <section class="h-sec">
+    <h2>${n(4)}Code-Arten</h2>
+    <div class="mx-wrap"><table class="skt tt"><thead><tr><th>Art</th><th>Name</th><th>Variablen</th><th>Anmeldung</th></tr></thead><tbody>${types}</tbody></table></div>
+  </section>
+</main>`);
 }
 
 function message(title, text) {
@@ -255,4 +353,4 @@ function message(title, text) {
   <a class="btn block" href="/info">So funktioniert QR-Pay</a></main>`);
 }
 
-module.exports = { manager, pay, provider, result, message, info, help };
+module.exports = { manager, pay, provider, result, message, info, concept, help };

@@ -1,4 +1,4 @@
-// Hilfe-Seite: Komponenten, Prüfungen je Code-Art, Abläufe, nicht gebaute Teile
+// Hilfe-Seite: Erzeugung, Komponenten, Prüfungen je Code-Art, Abläufe, nicht gebaute Teile
 (() => {
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -15,13 +15,13 @@
   function mapDesktop() {
     const W = 150, H = 50;
     return `<svg viewBox="0 0 1000 172" role="img" aria-label="Komponenten">${head}`
-      + node(0, 0, W, H, 'Manager', 'Codes erstellen')
+      + node(0, 0, W, H, 'Generator', 'Codes erstellen')
       + node(0, 120, W, H, 'Handy', 'Code scannen')
       + node(210, 60, W, H, 'Link-Dienst', 'Code prüfen')
       + node(420, 60, W, H, 'Vorgang', 'Zugang, Ausführung')
       + node(630, 0, W, H, 'Zahlungsdienst', 'Zahlung', 'ext')
       + node(630, 120, W, H, 'Ident-Dienst', 'Identifizierung', 'ext')
-      + node(840, 60, W, H, 'Übergabe', 'an Fachsystem', 'todo')
+      + node(840, 60, W, H, 'Übergabe', 'an Fachseite', 'todo')
       + wire('M150 25 H180 V75 H208') + wire('M150 145 H180 V95 H208')
       + wire('M360 85 H418')
       + wire('M570 75 H600 V25 H628') + wire('M570 95 H600 V145 H628')
@@ -31,17 +31,58 @@
   function mapMobile() {
     const W = 160, H = 50;
     return `<svg viewBox="0 0 360 420" role="img" aria-label="Komponenten">${head}`
-      + node(0, 0, W, H, 'Manager', 'Codes erstellen')
+      + node(0, 0, W, H, 'Generator', 'Codes erstellen')
       + node(200, 0, W, H, 'Handy', 'Code scannen')
       + node(100, 90, W, H, 'Link-Dienst', 'Code prüfen')
       + node(100, 180, W, H, 'Vorgang', 'Zugang, Ausführung')
       + node(0, 270, W, H, 'Zahlungsdienst', 'Zahlung', 'ext')
       + node(200, 270, W, H, 'Ident-Dienst', 'Identifizierung', 'ext')
-      + node(100, 365, W, H, 'Übergabe', 'an Fachsystem', 'todo')
+      + node(100, 365, W, H, 'Übergabe', 'an Fachseite', 'todo')
       + wire('M80 50 V70 H160 V88') + wire('M280 50 V70 H200 V88')
       + wire('M180 140 V178')
       + wire('M150 230 V250 H80 V268') + wire('M210 230 V250 H280 V268')
       + wire('M180 230 V363', true)
+      + '</svg>';
+  }
+
+  // Erzeugung und Zustellung
+  const lbl = (x, y, t, a = 'middle') => `<text class="wl" x="${x}" y="${y}" text-anchor="${a}">${esc(t)}</text>`;
+  function supplyDesktop() {
+    const W = 140, H = 50;
+    return `<svg viewBox="0 0 1000 212" role="img" aria-label="Erzeugung und Zustellung">${head}`
+      + node(0, 0, 160, H, 'Generator', 'Codes signieren')
+      + node(0, 160, 160, H, 'Fachseite', 'Stammdaten, Vorgangsart', 'ext')
+      + wire('M40 158 V62', true) + lbl(46, 104, 'Auftrag', 'start')
+      + wire('M120 52 V148', true) + lbl(114, 122, 'Code, Link', 'end')
+      + node(220, 0, W, H, 'Brief', 'QR-Code gedruckt', 'ext')
+      + node(220, 80, W, H, 'Dokument', 'QR-Code und Link', 'ext')
+      + node(220, 160, W, H, 'E-Mail', 'Link', 'ext')
+      + wire('M160 185 H190 V25 H218') + wire('M190 105 H218') + wire('M190 185 H218')
+      + node(440, 0, W, H, 'Druckdienstleister', 'Druck, Versand', 'ext')
+      + wire('M360 25 H438')
+      + node(660, 80, W, H, 'Empfänger', 'Scan oder Klick')
+      + wire('M580 25 H620 V95 H658') + wire('M360 105 H658') + wire('M360 185 H620 V115 H658')
+      + node(860, 80, W, H, 'Link-Dienst', 'Code prüfen')
+      + wire('M800 105 H858')
+      + '</svg>';
+  }
+  function supplyMobile() {
+    const W = 110, H = 50;
+    return `<svg viewBox="0 0 360 440" role="img" aria-label="Erzeugung und Zustellung">${head}`
+      + node(0, 0, 150, H, 'Generator', 'Codes signieren')
+      + node(210, 0, 150, H, 'Fachseite', 'Stammdaten', 'ext')
+      + wire('M208 18 H152', true) + wire('M152 34 H208', true)
+      + lbl(180, 68, 'Auftrag ← · → Code, Link')
+      + node(0, 100, W, H, 'Brief', 'gedruckt', 'ext')
+      + node(125, 100, W, H, 'Dokument', 'Code, Link', 'ext')
+      + node(250, 100, W, H, 'E-Mail', 'Link', 'ext')
+      + wire('M285 50 V80 H55 V98') + wire('M180 80 V98') + wire('M285 80 H305 V98')
+      + node(0, 190, W, H, 'Druck', 'Versand', 'ext')
+      + wire('M55 150 V188')
+      + node(100, 290, 160, H, 'Empfänger', 'Scan oder Klick')
+      + wire('M55 240 V266 H150 V288') + wire('M180 150 V288') + wire('M305 150 V266 H210 V288')
+      + node(100, 380, 160, H, 'Link-Dienst', 'Code prüfen')
+      + wire('M180 340 V378')
       + '</svg>';
   }
 
@@ -59,7 +100,7 @@
     ['Einmal-Code (Standard)', 'nynyy'],
     ['Weiterleitung auf Ziel', 'ynnnn'],
     ['Rate-Limit', 'ooooo'],
-    ['Übergabe an Fachsystem', 'noooo'],
+    ['Übergabe an Fachseite', 'noooo'],
   ];
   function renderMatrix() {
     const t = $('#matrix');
@@ -71,7 +112,7 @@
   }
 
   // Abläufe
-  const LANES = { H: 'Handy', L: 'Link-Dienst', V: 'Vorgang', X: 'Extern', F: 'Fachsystem' };
+  const LANES = { H: 'Handy', L: 'Link-Dienst', V: 'Vorgang', X: 'Extern', F: 'Fachseite' };
   const LX = { H: 80, L: 240, V: 400, X: 560, F: 720 };
   const scan = [
     { f: 'H', t: 'L', l: 'Code aufrufen' },
@@ -215,8 +256,8 @@
 
   // Nicht gebaut
   const SKETCHES = [
-    ['Übergabe an das Fachsystem', ['Vorgang abgeschlossen', 'Ereignis mit Vorgangs-ID', 'Quittung', 'Wiederholung bei Fehler']],
-    ['Massenerzeugung', ['Empfängerliste', 'Codes signieren', 'Serienbrief']],
+    ['Auftrag der Fachseite', ['Stammdaten und Vorgangsart', 'Codes signieren', 'Code und Link zurück']],
+    ['Übergabe an die Fachseite', ['Vorgang abgeschlossen', 'Ereignis mit Vorgangs-ID', 'Quittung', 'Wiederholung bei Fehler']],
     ['Schlüsselrotation', ['Neuer Schlüssel', 'Alte Version parallel gültig', 'Alte Version läuft aus']],
     ['Support-Auskunft', ['Code-ID', 'Status und Verlauf', 'Sperren oder neu ausstellen']],
     ['Kurzlink', ['Kurze URL', 'Serverseitige Auflösung', 'Gleiche Prüfungen']],
@@ -228,6 +269,7 @@
 
   function renderAll() {
     $('#map').innerHTML = small.matches ? mapMobile() : mapDesktop();
+    $('#supply').innerHTML = small.matches ? supplyMobile() : supplyDesktop();
     renderSeq();
   }
   small.addEventListener('change', renderAll);
