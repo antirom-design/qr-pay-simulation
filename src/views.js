@@ -251,8 +251,6 @@ function concept() {
     <h2>Durchlauf je Code-Art</h2>
     <div class="flow-tabs" id="run-tabs" role="tablist"></div>
     <div id="run"></div>
-    <div class="run-legend" id="run-legend"></div>
-    <div class="run-res" id="run-res" aria-live="polite"></div>
   </section>
   <section class="h-sec">
     <h2>Nicht gebaut</h2>
