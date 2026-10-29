@@ -207,20 +207,19 @@
     : e.actor === 'server' ? (e.payment_id ? 'zahlung' : 'link')
     : e.actor === 'anbieter' ? (e.payment_id ? 'zahlungsdienst' : 'ident')
     : COMP[e.actor] ? e.actor : 'link');
+  $('#sim-legend').innerHTML = COMPONENTS.map((c) => `<span class="c-${c.id}" title="${esc(c.hint)}">${esc(c.name)}</span>`).join('');
   const shown = new Set(); // leer = alle
   let simEvents = [];
 
   function renderFilter() {
     const count = (ids) => simEvents.filter((e) => ids.includes(e.comp)).length;
-    const chip = (c) => `<button type="button" class="chip c-${c.id}${shown.has(c.id) ? ' on' : ''}${count([c.id]) ? '' : ' zero'}" data-comp="${c.id}" title="${esc(c.hint)}">${esc(c.name)} <b>${count([c.id])}</b></button>`;
     const group = (art) => {
       const ids = COMPONENTS.filter((c) => c.art === art).map((c) => c.id);
       const on = shown.size && ids.length === shown.size && ids.every((id) => shown.has(id));
       return `<button type="button" class="grp g-${art}${on ? ' on' : ''}" data-art="${art}">${ARTS[art]} <b>${count(ids)}</b></button>`;
     };
     $('#sim-filter').innerHTML = `
-      <div class="grps"><button type="button" class="grp${shown.size ? '' : ' on'}" data-all>Alle <b>${simEvents.length}</b></button>${Object.keys(ARTS).map(group).join('')}</div>
-      <div class="chips">${COMPONENTS.map(chip).join('')}</div>`;
+      <div class="grps"><button type="button" class="grp${shown.size ? '' : ' on'}" data-all>Alle <b>${simEvents.length}</b></button>${Object.keys(ARTS).map(group).join('')}</div>`;
     for (const li of $('#sim-log').children) li.hidden = shown.size > 0 && !shown.has(li.dataset.comp);
   }
   $('#sim-filter').addEventListener('click', (ev) => {
@@ -232,7 +231,7 @@
       const same = ids.length === shown.size && ids.every((id) => shown.has(id));
       shown.clear();
       if (!same) ids.forEach((id) => shown.add(id));
-    } else shown.has(b.dataset.comp) ? shown.delete(b.dataset.comp) : shown.add(b.dataset.comp);
+    }
     renderFilter();
   });
   $('#filter-on').onchange = (ev) => {

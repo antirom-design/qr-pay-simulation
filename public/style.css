@@ -136,17 +136,16 @@ a { color: var(--info); }
 .phone-notch { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 96px; height: 26px; border-radius: 14px; background: #111; z-index: 2; }
 .phone-actions { display: flex; gap: 6px; }
 .log-col { display: flex; flex-direction: column; min-height: 0; max-height: calc(100dvh - 60px); }
+.log-legend { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; font-size: 12px; }
+.log-legend span { padding: 2px 8px; border-radius: 6px; border-left: 3px solid #ccc; background: #f4f6f9; }
 .log-tools { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; color: var(--ink-3); }
 .log-filter { margin-bottom: 8px; font-size: 12px; }
 .log-filter[hidden], #log-copy[hidden] { display: none; }
 .log-tools .check { padding: 0; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink); cursor: pointer; }
 .log-tools { min-height: 32px; }
-.log-filter .grps, .log-filter .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .log-filter .grps { margin-bottom: 6px; }
 .log-filter button { font: inherit; cursor: pointer; padding: 3px 9px; border-radius: 7px; border: 1px solid var(--line); background: #fff; color: var(--ink); }
 .log-filter button b { font-weight: 600; color: var(--ink-3); margin-left: 2px; }
-.log-filter .chip { border-left: 4px solid #ccc; background: #f4f6f9; border-color: transparent; }
-.log-filter .chip.zero { opacity: .45; }
 .log-filter button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
 .log-filter button.on b { color: #cbd5e1; }
 .log-filter .g-offen { border-style: dashed; border-color: #f59e0b; }
