@@ -207,19 +207,23 @@
     : e.actor === 'server' ? (e.payment_id ? 'zahlung' : 'link')
     : e.actor === 'anbieter' ? (e.payment_id ? 'zahlungsdienst' : 'ident')
     : COMP[e.actor] ? e.actor : 'link');
-  $('#sim-legend').innerHTML = COMPONENTS.map((c) => `<span class="c-${c.id}" title="${esc(c.hint)}">${esc(c.name)}</span>`).join('');
+  // Ohne Filter bleibt die ursprüngliche Ansicht mit Manager, Handy, Server und Anbieter
+  const OLD = { link: 'server', vorgang: 'server', zahlung: 'server', uebergabe: 'server', zahlungsdienst: 'anbieter', ident: 'anbieter' };
+  const oldActor = (e) => OLD[e.actor] || e.actor;
   const shown = new Set(); // leer = alle
   let simEvents = [];
 
   function renderFilter() {
     const count = (ids) => simEvents.filter((e) => ids.includes(e.comp)).length;
+    const chip = (c) => `<button type="button" class="chip c-${c.id}${shown.has(c.id) ? ' on' : ''}${count([c.id]) ? '' : ' zero'}" data-comp="${c.id}" title="${esc(c.hint)}">${esc(c.name)} <b>${count([c.id])}</b></button>`;
     const group = (art) => {
       const ids = COMPONENTS.filter((c) => c.art === art).map((c) => c.id);
       const on = shown.size && ids.length === shown.size && ids.every((id) => shown.has(id));
       return `<button type="button" class="grp g-${art}${on ? ' on' : ''}" data-art="${art}">${ARTS[art]} <b>${count(ids)}</b></button>`;
     };
     $('#sim-filter').innerHTML = `
-      <div class="grps"><button type="button" class="grp${shown.size ? '' : ' on'}" data-all>Alle <b>${simEvents.length}</b></button>${Object.keys(ARTS).map(group).join('')}</div>`;
+      <div class="grps"><button type="button" class="grp${shown.size ? '' : ' on'}" data-all>Alle <b>${simEvents.length}</b></button>${Object.keys(ARTS).map(group).join('')}</div>
+      <div class="chips">${COMPONENTS.map(chip).join('')}</div>`;
     for (const li of $('#sim-log').children) li.hidden = shown.size > 0 && !shown.has(li.dataset.comp);
   }
   $('#sim-filter').addEventListener('click', (ev) => {
@@ -231,11 +235,12 @@
       const same = ids.length === shown.size && ids.every((id) => shown.has(id));
       shown.clear();
       if (!same) ids.forEach((id) => shown.add(id));
-    }
+    } else shown.has(b.dataset.comp) ? shown.delete(b.dataset.comp) : shown.add(b.dataset.comp);
     renderFilter();
   });
   $('#filter-on').onchange = (ev) => {
     const on = ev.target.checked;
+    $('#dlg-sim').classList.toggle('filter-on', on);
     $('#sim-filter').hidden = !on;
     $('#log-copy').hidden = !on;
     if (!on) shown.clear();
@@ -283,9 +288,10 @@
       simEvents.push(e);
       const c = COMP[e.comp];
       const li = document.createElement('li');
-      li.className = `k-${e.kind} c-${c.id}`;
+      const old = oldActor(e);
+      li.className = `k-${e.kind} c-${c.id} a-${old}`;
       li.dataset.comp = c.id;
-      li.innerHTML = `<time>${time(e.ts)}</time><span class="actor" title="${esc(c.name)} · ${ARTS[c.art]}">${esc(c.short)}</span><span class="msg">${esc(e.message)}${e.payment_id ? ` <i class="mono">${esc(e.payment_id)}</i>` : ''}</span>`;
+      li.innerHTML = `<time>${time(e.ts)}</time><span class="actor"><span class="an" title="${esc(c.name)} · ${ARTS[c.art]}">${esc(c.short)}</span><span class="ao">${esc(old)}</span></span><span class="msg">${esc(e.message)}${e.payment_id ? ` <i class="mono">${esc(e.payment_id)}</i>` : ''}</span>`;
       log.appendChild(li);
     }
     if (r.events.length) { renderFilter(); log.scrollTop = log.scrollHeight; }

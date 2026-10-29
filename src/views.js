@@ -75,7 +75,7 @@ function manager() {
     </div>
     <div class="log-col">
       <div class="log-head"><div><h3 id="sim-title">Simulation</h3><small id="sim-sub"></small></div><button class="x" data-close aria-label="Schließen">×</button></div>
-      <div class="log-legend" id="sim-legend"></div>
+      <div class="log-legend legend-old"><span class="a-manager">Manager</span><span class="a-handy">Handy</span><span class="a-server">Server</span><span class="a-anbieter">Anbieter</span></div>
       <div class="log-tools"><label class="check"><input type="checkbox" id="filter-on"> Filter an</label><button type="button" class="btn ghost sm" id="log-copy" hidden>Kopieren</button></div>
       <div id="sim-filter" class="log-filter" hidden></div>
       <ol id="sim-log" class="log"></ol>
