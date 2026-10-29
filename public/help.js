@@ -3,6 +3,8 @@
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const mq = matchMedia('(max-width: 700px)');
+  let mobile = mq.matches;
   const svg = (w, h, body, label) => `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(label)}">${body}</svg>`;
 
   // Pfeilspitze am Ende einer Linie von (x1,y1) nach (x2,y2)
@@ -16,7 +18,7 @@
     `<circle r="${r}" class="pkt ${cls}"><animateMotion dur="${dur}s" begin="${begin}s" repeatCount="indefinite" path="${path}"/></circle>`;
 
   // --- 1. Konzept (Hero) ------------------------------------------------------
-  (() => {
+  const heroDesktop = () => {
     const y = 92;
     const lbl = (x, t, s) => `<text class="hero-lbl" x="${x}" y="178">${t}</text><text class="hero-sub" x="${x}" y="197">${s}</text>`;
     const qr = [[0, 0], [1, 0], [0, 1], [3, 0], [3, 1], [2, 2], [0, 3], [1, 3], [3, 3], [2, 1]]
@@ -39,13 +41,13 @@
       ${lbl(922, 'Fachsystem', 'Übergabe noch zu bauen')}
       ${still ? '' : `<circle r="8" fill="#60a5fa"><animateMotion dur="6s" repeatCount="indefinite" path="M120 ${y} H922" keyPoints="0;0.47;0.47;0.74;0.74;1" keyTimes="0;0.28;0.48;0.7;0.78;1" calcMode="linear"/>
         <animate attributeName="fill" dur="6s" repeatCount="indefinite" values="#60a5fa;#60a5fa;#34d399;#34d399;#f59e0b;#f59e0b" keyTimes="0;0.4;0.48;0.74;0.8;1"/></circle>`}`;
-    $('#hero').innerHTML = svg(1000, 210, body, 'Vom Brief über das Handy und das Link-Management zum Vorgang und Fachsystem');
-  })();
+    return svg(1000, 210, body, 'Vom Brief über das Handy und das Link-Management zum Vorgang und Fachsystem');
+  };
 
   // --- 2. Komponenten-Landkarte -----------------------------------------------
   const node = (x, y, w, h, cls, title, lines) => `<g class="n ${cls}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12"/>
     <text class="t" x="${x + 16}" y="${y + 26}">${title}</text>${lines.map((l, i) => `<text class="s" x="${x + 16}" y="${y + 46 + i * 17}">${l}</text>`).join('')}</g>`;
-  (() => {
+  const mapDesktop = () => {
     const W = 214, c = [16, 276, 536, 796], A = 18, B = 140, H = 96, C = 290;
     const wire = (d, todo, x1, y1, x2, y2, both) => `<path class="wire${todo ? ' todo' : ''}" d="${d}"/>${head(x1, y1, x2, y2, todo ? 'todo' : '')}${both ? head(x2, y2, x1, y1, '') : ''}`;
     const mid = (r) => r + H / 2;
@@ -73,8 +75,48 @@
       ${motion(`M${c[1] + W / 2} ${C} V${B + H}`, 1.4, 1.1)}
       ${motion(`M${c[2] + W} ${mid(A)} H${c[3]}`, 2, 0.3, 'todo')}
       ${motion(`M${c[2] + W} ${mid(B)} H${c[3]}`, 2, 1.3, 'todo')}`;
-    $('#map').innerHTML = svg(1026, 388, body, 'Komponenten: Code-Manager, Handy, Link-Management, Vorgang, Zahlung, externe Dienste und die noch fehlende Übergabe');
-  })();
+    return svg(1026, 388, body, 'Komponenten: Code-Manager, Handy, Link-Management, Vorgang, Zahlung, externe Dienste und die noch fehlende Übergabe');
+  };
+
+  // Handy: dieselbe Kette senkrecht
+  const heroMobile = () => {
+    const x = 52, ys = [44, 126, 214, 304, 386];
+    const lbl = (y, t, s, hi) => `<text x="${x + 58}" y="${y - 2}" style="fill:${hi ? '#fff' : '#c6d2e4'};font-size:${hi ? 17 : 15}px;font-weight:700">${t}</text><text x="${x + 58}" y="${y + 18}" style="fill:${hi ? '#93c5fd' : '#7f93b3'};font-size:13px">${s}</text>`;
+    const body = `
+      <path class="hero-line" d="M${x} ${ys[0]} V${ys[3]}"/><path class="hero-line todo" d="M${x} ${ys[3] + 30} V${ys[4] - 30}"/>
+      <rect class="hero-ico" x="${x - 22}" y="${ys[0] - 28}" width="44" height="56" rx="5"/><path d="M${x - 12} ${ys[0] - 12} h9 v9 h-9z M${x + 3} ${ys[0] - 12} h9 v9 h-9z M${x - 12} ${ys[0] + 3} h9 v9 h-9z M${x + 5} ${ys[0] + 5} h5 v5 h-5z" fill="#9fb0c9"/>
+      <rect class="hero-ico" x="${x - 17}" y="${ys[1] - 30}" width="34" height="60" rx="8"/><rect x="${x - 11}" y="${ys[1] - 20}" width="22" height="38" rx="2" fill="#0f1b2d" stroke="#4a6b9c"/>
+      <circle class="hero-glow" cx="${x}" cy="${ys[2]}" r="46"/>
+      <g transform="translate(${x} ${ys[2]}) scale(0.72) translate(-500 -95)"><path class="hero-ico core" d="M500 40 L546 56 V96 C546 124 526 140 500 150 C474 140 454 124 454 96 V56 Z"/>
+      <path d="M482 94 l12 12 l24 -26" fill="none" stroke="#93c5fd" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></g>
+      <rect class="hero-ico" x="${x - 32}" y="${ys[3] - 24}" width="64" height="48" rx="8"/><path d="M${x - 20} ${ys[3] - 9} h34 M${x - 20} ${ys[3] + 1} h40 M${x - 20} ${ys[3] + 11} h24" stroke="#4a6b9c" stroke-width="4" stroke-linecap="round"/>
+      <rect class="hero-ico todo" x="${x - 28}" y="${ys[4] - 26}" width="56" height="52" rx="5"/>
+      ${lbl(ys[0], 'Brief mit QR-Code', 'monatelang gültig')}${lbl(ys[1], 'Handy', 'nur Kamera, keine App')}
+      ${lbl(ys[2], 'Link-Management', 'prüft, meldet an, protokolliert', 1)}${lbl(ys[3], 'Vorgang', 'zahlen, ändern, einreichen')}${lbl(ys[4], 'Fachsystem', 'Übergabe noch zu bauen')}
+      ${still ? '' : `<circle r="8" fill="#60a5fa"><animateMotion dur="6s" repeatCount="indefinite" path="M${x} ${ys[0]} V${ys[4]}" keyPoints="0;0.5;0.5;0.76;0.76;1" keyTimes="0;0.28;0.48;0.7;0.78;1" calcMode="linear"/>
+        <animate attributeName="fill" dur="6s" repeatCount="indefinite" values="#60a5fa;#60a5fa;#34d399;#34d399;#f59e0b;#f59e0b" keyTimes="0;0.4;0.48;0.74;0.8;1"/></circle>`}`;
+    return svg(360, 424, body, 'Vom Brief über das Handy und das Link-Management zum Vorgang und Fachsystem');
+  };
+
+  const mapMobile = () => {
+    const wire = (d, todo, x1, y1, x2, y2, both) => `<path class="wire${todo ? ' todo' : ''}" d="${d}"/>${head(x1, y1, x2, y2, todo ? 'todo' : '')}${both ? head(x2, y2, x1, y1, '') : ''}`;
+    const body = `<style>.ah{fill:#9aa7ba}.ah.todo{fill:#d97706}</style>
+      ${node(8, 8, 168, 78, 'own', 'Code-Manager', ['Codes anlegen, sperren', 'QR-Code erzeugen'])}
+      ${node(184, 8, 168, 78, 'own', 'Handy-Frontend', ['Scan, Formulare', 'Upload, Rücksprung'])}
+      ${node(8, 118, 218, 152, 'core', 'Link-Management', ['Signatur prüfen (HMAC)', 'Version und Status', 'Ablauf, Einmal-Code', 'Anmeldung mit Sperre', 'Sitzung, Statuslog'])}
+      ${node(236, 118, 116, 70, 'ext', 'Ident', ['eID, Video, Bank'])}
+      ${node(236, 200, 116, 70, 'ext', 'Zahlung ext.', ['PayPal, Wero …'])}
+      ${node(8, 302, 168, 78, 'own', 'Vorgangslogik', ['Konto, Adresse,', 'Dokument'])}
+      ${node(184, 302, 168, 78, 'own', 'Zahlungslogik', ['Abgleich, Verbuchung', 'Doppelzahlung'])}
+      ${node(8, 418, 344, 86, 'todo', 'Übergabe Fachsystem', ['Outbox, Wiederholung, Quittung', 'noch nicht gebaut'])}
+      ${wire('M92 86 V116', 0, 92, 86, 92, 116)}${wire('M205 86 V116', 0, 205, 86, 205, 116, 1)}
+      ${wire('M226 152 H234', 0, 226, 152, 234, 152)}
+      ${wire('M92 270 V300', 0, 92, 270, 92, 300)}${wire('M205 270 V300', 0, 205, 270, 205, 300)}${wire('M294 270 V300', 0, 294, 270, 294, 300, 1)}
+      ${wire('M92 380 V416', 1, 92, 380, 92, 416)}${wire('M268 380 V416', 1, 268, 380, 268, 416)}
+      ${motion('M205 86 V116', 1.2, 0)}${motion('M92 270 V300', 1.2, 0.5)}${motion('M205 270 V300', 1.2, 0.9)}${motion('M294 300 V270', 1.2, 0.3)}
+      ${motion('M92 380 V416', 1.6, 0.2, 'todo')}${motion('M268 380 V416', 1.6, 1, 'todo')}`;
+    return svg(360, 512, body, 'Komponenten senkrecht: Manager und Handy, Link-Management, Vorgang und Zahlung, Übergabe');
+  };
 
   // --- 3. Abläufe pro Code-Art -------------------------------------------------
   const LANES = [
@@ -157,7 +199,33 @@
   const LX = { H: 90, L: 270, P: 450, X: 630, F: 810 }, TOP = 100, ROW = 54;
   let flowId = 'PAY', cur = 0, timer = null, playing = !still;
 
+  const MX = { H: 36, L: 108, P: 180, X: 252, F: 324 }, SHORT = { H: 'Handy', L: 'Link', P: 'Vorgang', X: 'Extern', F: 'Fach' };
+  const shieldIco = '<svg class="ms-sh" width="16" height="18" viewBox="-9 -10 18 20" aria-label="Sicherheitsprüfung"><path d="M0 -8 L7 -5 V0 C7 5 4 8 0 9.5 C-4 8 -7 5 -7 0 V-5 Z"/></svg>';
+  function drawSeqMobile() {
+    const steps = FLOWS[flowId].steps;
+    const nodes = LANES.map((l) => `<g class="lane-h ${l.cls}"><rect x="${MX[l.id] - 32}" y="6" width="64" height="34" rx="9"/><text x="${MX[l.id]}" y="28" style="font-size:12.5px">${SHORT[l.id]}</text></g>
+      <line class="lane-l ${l.cls}" x1="${MX[l.id]}" y1="40" x2="${MX[l.id]}" y2="58"/>`).join('');
+    $('#seq').innerHTML = `<div class="seq-strip">${svg(360, 96, `<style>.ah{fill:#2563eb}.ah.todo{fill:#d97706}.ah.fail{fill:#c0362c}</style>${nodes}<g id="strip-cur"></g>`, 'Beteiligte')}</div>
+      <ol class="mlist">${steps.map((s, i) => `<li class="ms ${s.kind || ''}" data-i="${i}"><span class="n">${i + 1}</span><span class="b"><b>${esc(s.l)}</b><small>${s.f === s.to ? LANE_NAME[s.f] : `${SHORT[s.f]} → ${SHORT[s.to]}`}</small></span>${s.sec ? shieldIco : ''}</li>`).join('')}</ol>`;
+    $('#seq').querySelectorAll('.ms').forEach((li) => li.addEventListener('click', () => go(+li.dataset.i)));
+  }
+  function showMobile(s) {
+    $('#seq').querySelectorAll('.ms').forEach((li, i) => { li.classList.toggle('now', i === cur); li.classList.toggle('next', i > cur); });
+    const col = s.kind === 'todo' ? '#d97706' : s.kind === 'fail' ? '#c0362c' : '#2563eb', y = 68;
+    let g;
+    if (s.f === s.to) {
+      g = `<rect x="${MX[s.f] - 35}" y="3" width="70" height="40" rx="11" fill="none" stroke="${col}" stroke-width="3">${still ? '' : '<animate attributeName="opacity" values="1;.25;1" dur="1.2s" repeatCount="indefinite"/>'}</rect>
+        <path d="M${MX[s.f] - 14} 66 H${MX[s.f] + 14}" stroke="${col}" stroke-width="2.5"/>`;
+    } else {
+      const a = MX[s.f], b = MX[s.to], d = Math.sign(b - a);
+      g = `<path d="M${a} ${y} H${b - d * 4}" stroke="${col}" stroke-width="2.5" fill="none" ${s.kind === 'todo' ? 'stroke-dasharray="6 4"' : ''}/>${head(a, y, b, y, s.kind || '', 10)}
+        ${still ? '' : `<circle r="6" fill="${col}"><animateMotion dur="0.9s" fill="freeze" path="M${a} ${y} H${b}"/></circle>`}`;
+    }
+    $('#strip-cur').innerHTML = `${g}<text x="180" y="90" style="font-size:13px;font-weight:700;text-anchor:middle;fill:${col}">${esc(s.l)}</text>`;
+  }
+
   function drawSeq() {
+    if (mobile) return drawSeqMobile();
     const steps = FLOWS[flowId].steps, h = TOP + steps.length * ROW + 12;
     const lanes = LANES.map((l) => `<line class="lane-l ${l.cls}" x1="${LX[l.id]}" y1="66" x2="${LX[l.id]}" y2="${h - 6}"/>
       <g class="lane-h ${l.cls}"><rect x="${LX[l.id] - 84}" y="8" width="168" height="56" rx="10"/><text x="${LX[l.id]}" y="32">${l.name}</text><text class="s" x="${LX[l.id]}" y="52">${l.sub}</text></g>`).join('');
@@ -181,6 +249,7 @@
 
   function show() {
     const steps = FLOWS[flowId].steps, s = steps[cur];
+    if (mobile) showMobile(s);
     $('#seq').querySelectorAll('.st').forEach((g, i) => {
       g.classList.toggle('now', i === cur);
       g.classList.toggle('next', i > cur);
@@ -234,45 +303,61 @@
   setFlow('PAY');
 
   // --- 4. Sicherheits-Tore ------------------------------------------------------
-  (() => {
-    const GATES = [
-      { t: 'Signatur', s: 'HMAC-SHA256' }, { t: 'Version', s: 'alter Druck raus' }, { t: 'Status & Ablauf', s: 'aktiv, gültig' },
-      { t: 'Missbrauch', s: 'Rate-Limit (Skizze)', todo: 1 }, { t: 'Anmeldung', s: 'Geb.-Datum, Ident' }, { t: 'Sitzung', s: 'signiert, 10 Min.' },
-    ];
-    const TOKS = [
-      { t: 'Gültiger Code', stop: 99 }, { t: 'Betrag geändert', stop: 0 }, { t: 'Alter Ausdruck', stop: 1 },
-      { t: 'Deaktivierter Code', stop: 2 }, { t: 'Massen-Scan (Bot)', stop: 3 }, { t: 'Falsches Geburtsdatum', stop: 4 },
-    ];
-    const gx = (i) => 228 + i * 118, X0 = 180, X1 = 932, Y0 = 108, DY = 34;
-    const gates = GATES.map((g, i) => `<g class="gate${g.todo ? ' todo' : ''}"><rect x="${gx(i) - 56}" y="10" width="112" height="56" rx="10"/>
-      <text x="${gx(i)}" y="34">${g.t}</text><text class="s" x="${gx(i)}" y="52">${g.s}</text></g>
-      <line x1="${gx(i)}" y1="66" x2="${gx(i)}" y2="${Y0 + DY * TOKS.length - 14}" stroke="${g.todo ? '#f2c27a' : '#c3ccd9'}" stroke-width="3" ${g.todo ? 'stroke-dasharray="6 5"' : ''}/>`).join('');
-    const end = `<g class="gate"><rect x="${X1 - 48}" y="10" width="96" height="56" rx="10" style="fill:#e3f7ee;stroke:#0e9f6e"/><text x="${X1}" y="42">Vorgang</text></g>`;
-    const toks = TOKS.map((k, i) => {
-      const y = Y0 + i * DY;
-      return `<line class="track" x1="${X0}" y1="${y}" x2="${X1}" y2="${y}"/><g class="tok" data-i="${i}"><text x="12" y="${y + 4}">${k.t}</text>
-        <circle r="8" cx="${X0}" cy="${y}" fill="#2563eb"/><path class="x" d="M-6 -6 L6 6 M6 -6 L-6 6"/></g>`;
-    }).join('');
-    $('#gates').innerHTML = svg(1000, Y0 + DY * TOKS.length, gates + end + toks, 'Sicherheitsprüfungen: welcher Scan an welcher Prüfung scheitert');
+  const GATES = [
+    { t: 'Signatur', s: 'HMAC-SHA256' }, { t: 'Version', s: 'alter Druck raus' }, { t: 'Status & Ablauf', s: 'aktiv, gültig' },
+    { t: 'Missbrauch', s: 'Rate-Limit (Skizze)', todo: 1 }, { t: 'Anmeldung', s: 'Geb.-Datum, Ident' }, { t: 'Sitzung', s: 'signiert, 10 Min.' },
+  ];
+  const TOKS = [
+    { t: 'Gültiger Code', a: 'gültig', b: '', stop: 99 }, { t: 'Betrag geändert', a: 'Betrag', b: 'geänd.', stop: 0 },
+    { t: 'Alter Ausdruck', a: 'alter', b: 'Druck', stop: 1 }, { t: 'Deaktivierter Code', a: 'deak-', b: 'tiviert', stop: 2 },
+    { t: 'Massen-Scan (Bot)', a: 'Bot', b: '', stop: 3 }, { t: 'Falsches Geburtsdatum', a: 'falsch.', b: 'Geb.', stop: 4 },
+  ];
+  let gateRun = 0;
+  function gates(m) {
+    const run = ++gateRun;
+    let body, pos, W, H;
+    if (!m) {
+      const gx = (i) => 228 + i * 118, X0 = 180, X1 = 932, Y0 = 108, DY = 34;
+      W = 1000; H = Y0 + DY * TOKS.length;
+      body = GATES.map((g, i) => `<g class="gate${g.todo ? ' todo' : ''}"><rect x="${gx(i) - 56}" y="10" width="112" height="56" rx="10"/>
+        <text x="${gx(i)}" y="34">${g.t}</text><text class="s" x="${gx(i)}" y="52">${g.s}</text></g>
+        <line x1="${gx(i)}" y1="66" x2="${gx(i)}" y2="${Y0 + DY * TOKS.length - 14}" stroke="${g.todo ? '#f2c27a' : '#c3ccd9'}" stroke-width="3" ${g.todo ? 'stroke-dasharray="6 5"' : ''}/>`).join('')
+        + `<g class="gate"><rect x="${X1 - 48}" y="10" width="96" height="56" rx="10" style="fill:#e3f7ee;stroke:#0e9f6e"/><text x="${X1}" y="42">Vorgang</text></g>`
+        + TOKS.map((k, i) => `<line class="track" x1="${X0}" y1="${Y0 + i * DY}" x2="${X1}" y2="${Y0 + i * DY}"/><g class="tok"><text x="12" y="${Y0 + i * DY + 4}">${k.t}</text>
+          <circle r="8" fill="#2563eb"/><path class="x" d="M-6 -6 L6 6 M6 -6 L-6 6"/></g>`).join('');
+      pos = (i, p, k) => { const stop = k.stop === 99 ? X1 - 56 : gx(k.stop) - 14; const x = Math.min(X0 + p * (X1 - 56 - X0), stop); return { x, y: Y0 + i * DY, at: x >= stop, xo: 18, yo: 0 }; };
+    } else {
+      // Handy: Tore liegen quer, Namen links, die Codes fallen rechts von oben hindurch
+      const cx = (i) => 136 + i * 40, gy = (j) => 84 + j * 58, Y0 = 52, Y1 = gy(GATES.length) + 6;
+      W = 360; H = Y1 + 44;
+      body = GATES.map((g, j) => `<g class="gate${g.todo ? ' todo' : ''}"><rect x="6" y="${gy(j) - 10}" width="348" height="40" rx="9"/>
+        <text x="16" y="${gy(j) + 6}" style="text-anchor:start">${g.t}</text><text class="s" x="16" y="${gy(j) + 21}" style="text-anchor:start">${g.s}</text></g>`).join('')
+        + `<g class="gate"><rect x="6" y="${Y1 - 4}" width="348" height="34" rx="8" style="fill:#e3f7ee;stroke:#0e9f6e"/><text x="16" y="${Y1 + 18}" style="text-anchor:start">Vorgang</text></g>`
+        + TOKS.map((k, i) => `<line class="track" x1="${cx(i)}" y1="${Y0}" x2="${cx(i)}" y2="${Y1 - 4}"/><g class="tok">
+          <text x="${cx(i)}" y="16" style="text-anchor:middle;font-size:10.5px">${k.a}</text><text x="${cx(i)}" y="30" style="text-anchor:middle;font-size:10.5px">${k.b}</text>
+          <circle r="8" fill="#2563eb"/><path class="x" d="M-5 -5 L5 5 M5 -5 L-5 5"/></g>`).join('');
+      pos = (i, p, k) => { const stop = k.stop === 99 ? Y1 + 13 : gy(k.stop) - 20; const y = Math.min(Y0 + p * (Y1 + 13 - Y0), stop); return { x: cx(i), y, at: y >= stop, xo: 0, yo: -16 }; };
+    }
+    $('#gates').innerHTML = svg(W, H, body, 'Sicherheitsprüfungen: welcher Scan an welcher Prüfung scheitert');
     const els = [...document.querySelectorAll('#gates .tok')];
     const D = 7000, t0 = performance.now();
     function frame(now) {
-      const t = ((now - t0) % D) / D, p = Math.min(1, t / 0.82);
+      if (run !== gateRun) return;
+      const p = Math.min(1, (((now - t0) % D) / D) / 0.82);
       els.forEach((g, i) => {
-        const k = TOKS[i], stopX = k.stop === 99 ? X1 - 56 : gx(k.stop) - 14;
-        const x = Math.min(X0 + p * (X1 - 56 - X0), stopX), y = Y0 + i * DY, blocked = x >= stopX && k.stop !== 99;
+        const k = TOKS[i], q = pos(i, p, k), blocked = q.at && k.stop !== 99, todo = GATES[k.stop]?.todo;
         const c = g.querySelector('circle');
-        c.setAttribute('cx', x);
-        c.setAttribute('fill', blocked ? (GATES[k.stop]?.todo ? '#d97706' : '#c0362c') : (k.stop === 99 && x >= stopX ? '#0e9f6e' : '#2563eb'));
+        c.setAttribute('cx', q.x); c.setAttribute('cy', q.y);
+        c.setAttribute('fill', blocked ? (todo ? '#d97706' : '#c0362c') : (k.stop === 99 && q.at ? '#0e9f6e' : '#2563eb'));
         const xx = g.querySelector('.x');
-        xx.setAttribute('transform', `translate(${x + 18} ${y})`);
+        xx.setAttribute('transform', `translate(${q.x + q.xo} ${q.y + q.yo})`);
         xx.style.opacity = blocked ? 1 : 0;
-        if (GATES[k.stop]?.todo) xx.style.stroke = '#d97706';
+        if (todo) xx.style.stroke = '#d97706';
       });
       requestAnimationFrame(frame);
     }
     if (still) frame(t0 + D * 0.82); else requestAnimationFrame(frame);
-  })();
+  }
 
   // --- 5. Sicherheitsmaßnahmen im Überblick -------------------------------------
   const SEC = [
@@ -375,6 +460,52 @@
         ${dot('M120 58 H168', 1)}${dot('M320 58 H368', 1, 0.5)}`, 'Skizze Missbrauchsschutz'),
       list: ['CAPTCHA erst nach Fehlversuchen, damit normale Kunden nichts merken', 'Alarm, wenn ein Code ungewöhnlich oft gescannt wird'] },
   ];
-  $('#sketches').innerHTML = SKETCHES.map((k) => `<article class="sk"><span class="stamp">Skizze</span><h3>${k.t}</h3><p class="why">${k.why}</p>${k.svg}
-    <ul>${k.list.map((l) => `<li>${l}</li>`).join('')}</ul></article>`).join('');
+  // Handy: jede Skizze als senkrechte Kette, Notizen rechts daneben
+  const MOBILE_SK = [
+    [['Vorgang', 'abgeschlossen'], ['Outbox', 'in derselben DB', 'db', ['Idempotenz-', 'Schlüssel']], ['Worker', 'sendet', 'hot', ['Fehler: 1 m,', '5 m, 1 h …']],
+      ['Fachsystem', 'API', 'hot', ['Quittung', 'zurück']], ['Dead Letter', '', 'hot', ['→ Support-', 'Konsole']]],
+    [['Fachverfahren', 'CSV oder API'], ['Batch-Job', 'idempotent', 'hot', ['Briefnummer', 'als Schlüssel']], ['Codes', 'Datenbank', 'db'],
+      ['Vorschau', 'Freigabe', 'hot', ['vor dem', 'Druck!']], ['Druckdaten', 'PDF, Druckstraße', 'hot'], ['Versand', 'Brief']],
+    [['Token mit kid', '{ kid: "k2", … }', 'hot'], ['k1 signiert', 'Briefe gehen raus'], ['k2 signiert', 'k1 prüft nur noch', 'db', ['alte Briefe', 'bleiben gültig']],
+      ['k1 gesperrt', 'nach Laufzeit der Briefe', 'hot', ['Notfall:', 'sofort sperren']]],
+    [['Hotline', 'Anruf'], ['Suche', 'Kd-Nr. oder Brief'], ['Klartext-Diagnose', '„veraltet seit 3.11.“', 'hot', ['liest den', 'Statuslog']], ['Aktionen', 'entsperren, neu', 'hot', ['landet selbst', 'im Statuslog']]],
+    null,
+    [['Scan', ''], ['Domain-Check', 'nur eigene Domain', 'hot', ['gefälschter', 'Aufkleber ✗']], ['Rate-Limit', 'je IP und Code', 'hot', ['CAPTCHA nach', 'Fehlversuchen']], ['Link-Mgmt', 'Prüfungen']],
+  ];
+  const sketchMobile = (spec, i) => {
+    if (!spec) {
+      // Kurzlink gegen signierten Inhalt: beide Codes untereinander
+      const d = SKETCHES[i].svg;
+      const inner = d.slice(d.indexOf('>') + 1, d.lastIndexOf('</svg>'));
+      return `<svg viewBox="0 0 520 230" role="img" aria-label="Skizze signierter Inhalt gegen Kurzlink" style="transform:scale(1)">${inner}</svg>`;
+    }
+    const W = 196, Hh = 54, G = 34, X = 14;
+    let out = skStyle;
+    spec.forEach(([t, sub, cls, notes], j) => {
+      const y = 8 + j * (Hh + G);
+      out += skb(j, X, y, W, Hh, t, sub, cls || '');
+      (notes || []).forEach((n, k) => { out += note(X + W + 18, y + 22 + k * 18, n); });
+      if (j < spec.length - 1) {
+        const y1 = y + Hh + 2, y2 = y + Hh + G - 2, hot = (spec[j + 1][2] || '').includes('hot') ? 'hot' : '';
+        out += skw(`M${X + W / 2} ${y1} V${y2}`, X + W / 2, y1, X + W / 2, y2, hot) + dot(`M${X + W / 2} ${y1} V${y2}`, 1, j * 0.4);
+      }
+    });
+    return svg(360, 16 + spec.length * (Hh + G) - G, out, `Skizze ${SKETCHES[i].t}`);
+  };
+  function sketches(m) {
+    $('#sketches').innerHTML = SKETCHES.map((k, i) => `<article class="sk"><span class="stamp">Skizze</span><h3>${k.t}</h3><p class="why">${k.why}</p>${m ? sketchMobile(MOBILE_SK[i], i) : k.svg}
+      <ul>${k.list.map((l) => `<li>${l}</li>`).join('')}</ul></article>`).join('');
+  }
+
+  function renderAll() {
+    mobile = mq.matches;
+    document.body.classList.toggle('m', mobile);
+    $('#hero').innerHTML = mobile ? heroMobile() : heroDesktop();
+    $('#map').innerHTML = mobile ? mapMobile() : mapDesktop();
+    gates(mobile);
+    sketches(mobile);
+    drawSeq(); show();
+  }
+  renderAll();
+  mq.addEventListener('change', renderAll);
 })();

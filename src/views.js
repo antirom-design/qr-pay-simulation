@@ -227,7 +227,7 @@ function help() {
   <section class="h-sec" id="komponenten">
     <p class="h-kicker">Komponenten</p>
     <h2>Wo programmiert wird</h2>
-    <p class="h-text">Jeder Schritt im Verlauf gehört zu einer dieser Komponenten. Die punktierten Wege laufen in der Simulation schon, die gestrichelte Übergabe rechts gibt es noch nicht.</p>
+    <p class="h-text">Jeder Schritt im Verlauf gehört zu einer dieser Komponenten. Die punktierten Wege laufen in der Simulation schon, die gestrichelte Übergabe ans Fachsystem gibt es noch nicht.</p>
     <div class="h-legend">
       <span class="lg core">Kern: Link-Management</span><span class="lg own">Eigenentwicklung</span><span class="lg ext">Externer Dienst, angebunden</span><span class="lg todo">Noch zu bauen</span>
     </div>

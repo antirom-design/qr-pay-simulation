@@ -168,3 +168,32 @@ body.help {
   .wire.todo, .hero-line.todo, .skw, .hero-glow { animation: none; }
   .st.now .draw { animation: none; stroke-dashoffset: 0; }
 }
+
+/* Handy: senkrechte Varianten der Diagramme */
+.m .h-scroll { margin: 0; padding: 0; overflow: visible; }
+.m .h-scroll > div { min-width: 0; }
+.m .h-hero { padding: 32px 0 20px; }
+.m .h-hero-svg { max-width: 380px; }
+.m .flow-box { padding: 8px; gap: 10px; }
+.seq-strip { position: sticky; top: 64px; z-index: 2; background: #fbfcfe; border-bottom: 1px solid var(--line); margin: 0 -8px 8px; padding: 4px 8px 0; }
+.mlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ms { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #fff; border: 1px solid var(--line); border-left: 4px solid #c3ccd9; border-radius: 10px; cursor: pointer; transition: opacity .3s, background .3s; }
+.ms .n { flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--bg); font-size: 12px; font-weight: 700; display: grid; place-items: center; color: var(--ink-2); }
+.ms .b { flex: 1; min-width: 0; }
+.ms b { display: block; font-size: 14.5px; font-weight: 600; }
+.ms small { display: block; font-size: 12px; color: var(--ink-3); }
+.ms .ms-sh { flex: none; width: 16px !important; height: 18px; fill: var(--accent); }
+.ms.next { opacity: .45; }
+.ms.now { border-color: var(--core); border-left-color: var(--core); background: var(--core-soft); }
+.ms.now .n { background: var(--core); color: #fff; }
+.ms.todo { border-style: dashed; border-left-color: var(--todo); }
+.ms.todo.now { background: var(--todo-soft); border-color: var(--todo); }
+.ms.todo.now .n { background: var(--todo); }
+.ms.fail { border-left-color: var(--bad); }
+.ms.fail .ms-sh { fill: var(--bad); }
+.ms.fail.now { background: var(--err-soft); border-color: var(--bad); }
+.ms.fail.now .n { background: var(--bad); }
+.m .sk { padding: 14px 12px 10px; }
+.m .sk h3 { font-size: 23px; padding-right: 70px; }
+.m .flow-tabs { flex-wrap: nowrap; overflow-x: auto; margin: 0 -16px 12px; padding: 0 16px 4px; scrollbar-width: none; }
+.m .flow-tabs button { flex: none; }
