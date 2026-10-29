@@ -254,117 +254,91 @@
   $('#fs-next').addEventListener('click', () => { setPlay(false); go(cur + 1); });
   $('#fs-play').addEventListener('click', () => setPlay(!playing));
 
-  // Durchlauf: Stationen je Code-Art mit möglichen Abbrüchen
-  const GROUPS = { H: ['Handy', ''], L: ['Link-Dienst', ''], V: ['Vorgang', ''], Z: ['Zahlungsdienst', 'ext'], I: ['Ident-Dienst', 'ext'], F: ['Fachseite', 'todo'] };
+  // Durchlauf: alle Arten von Aufrufen laufen parallel durch die Prüfungen der Code-Art
+  const GROUPS = { L: ['Link-Dienst', ''], V: ['Vorgang', ''], Z: ['Zahlungsdienst', 'ext'], I: ['Ident-Dienst', 'ext'] };
   const LINK = [
-    { c: 'H', t: 'Aufruf' },
-    { c: 'L', t: 'Rate-Limit', todo: true },
-    { c: 'L', t: 'Signatur', a: 'Code verändert oder gefälscht' },
-    { c: 'L', t: 'Code bekannt', a: 'Code nicht mehr bekannt' },
-    { c: 'L', t: 'Version', a: 'Code veraltet, neuer Code nötig' },
-    { c: 'L', t: 'Status', a: 'Code deaktiviert oder abgelaufen' },
+    { c: 'L', t: 'Rate-Limit', k: 'Massen-Scan (Bot)', a: 'zu viele Aufrufe', todo: true },
+    { c: 'L', t: 'Signatur', k: 'Manipulierter Code', a: 'Code verändert oder gefälscht' },
+    { c: 'L', t: 'Code bekannt', k: 'Gelöschter Code', a: 'Code nicht mehr bekannt' },
+    { c: 'L', t: 'Version', k: 'Alter Ausdruck', a: 'Inhalt geändert, neuer Code nötig' },
+    { c: 'L', t: 'Status', k: 'Deaktiviert oder abgelaufen', a: 'Code gesperrt' },
   ];
-  const ONCE = { c: 'L', t: 'Einmal-Code', a: 'Vorgang bereits erledigt' };
+  const ONCE = { c: 'L', t: 'Einmal-Code', k: 'Zweiter Aufruf', a: 'Vorgang bereits erledigt' };
   const BIRTH = [
-    { c: 'V', t: 'Geburtsdatum', a: 'Geburtsdatum falsch, nach 3 Versuchen 15 Min. gesperrt' },
-    { c: 'V', t: 'Sitzung', a: 'Anmeldung abgelaufen' },
+    { c: 'V', t: 'Geburtsdatum', k: 'Falsches Geburtsdatum', a: 'nach 3 Versuchen 15 Min. gesperrt' },
+    { c: 'V', t: 'Sitzung', k: 'Sitzung abgelaufen', a: 'erneut anmelden' },
   ];
-  const PAYING = [
-    { c: 'Z', t: 'Zahlung', a: 'Zahlung abgebrochen, abgelehnt oder ohne Rückmeldung' },
-    { c: 'V', t: 'Verbuchung' },
-  ];
-  const HANDOVER = { c: 'F', t: 'Übergabe', todo: true };
+  const PAYING = { c: 'Z', t: 'Zahlung', k: 'Zahlung abgebrochen', a: 'abgebrochen, abgelehnt oder ohne Rückmeldung' };
   const RUNS = {
-    INFO: [...LINK, { c: 'L', t: 'Weiterleitung' }],
-    PAY: [...LINK, ONCE, { c: 'V', t: 'Betrag' }, ...PAYING, HANDOVER],
-    KONTO: [...LINK, ...BIRTH, { c: 'V', t: 'Offener Betrag', a: 'Kein Betrag offen' }, ...PAYING, HANDOVER],
-    ADR: [...LINK, ONCE, ...BIRTH, { c: 'V', t: 'Anschrift', a: 'Eingabe unvollständig oder unverändert' }, { c: 'V', t: 'Speichern' }, HANDOVER],
-    DOK: [...LINK, ONCE, { c: 'I', t: 'Verfahren', a: 'Verfahren reicht für das Vertrauensniveau nicht' }, { c: 'V', t: 'Person', a: 'Identifizierte Person passt nicht zum Vorgang' },
-      { c: 'V', t: 'Sitzung', a: 'Anmeldung abgelaufen' }, { c: 'V', t: 'Upload', a: 'Datei leer, über 3 MB oder Prüfsumme falsch' }, { c: 'V', t: 'Ablage' }, HANDOVER],
+    INFO: { end: 'Weiterleitung', g: [...LINK] },
+    PAY: { end: 'Zahlung verbucht', g: [...LINK, ONCE, PAYING] },
+    KONTO: { end: 'Zahlung verbucht', g: [...LINK, ...BIRTH, { c: 'V', t: 'Offener Betrag', k: 'Konto ausgeglichen', a: 'kein Betrag offen' }, PAYING] },
+    ADR: { end: 'Anschrift gespeichert', g: [...LINK, ONCE, ...BIRTH, { c: 'V', t: 'Anschrift', k: 'Unveränderte Anschrift', a: 'unvollständig oder unverändert' }] },
+    DOK: { end: 'Dokument abgelegt', g: [...LINK, ONCE, { c: 'I', t: 'Verfahren', k: 'Zu schwaches Verfahren', a: 'Vertrauensniveau nicht erreicht' },
+      { c: 'V', t: 'Person', k: 'Fremde Person', a: 'passt nicht zum Vorgang' }, { c: 'V', t: 'Sitzung', k: 'Sitzung abgelaufen', a: 'erneut anmelden' },
+      { c: 'V', t: 'Upload', k: 'Fehlerhafte Datei', a: 'leer, über 3 MB oder Prüfsumme falsch' }] },
   };
-  let runType = 'PAY', runCase = -1, runAuto = true, runTimer = null, runPos = 0;
+  let runType = 'PAY', runId = 0;
 
-  function runCases() { return RUNS[runType].map((s, i) => (s.a ? i : null)).filter((i) => i !== null); }
-  function runLayout(st) {
-    const v = small.matches, n = st.length;
-    return st.map((s, i) => (v ? { x: 132, y: 18 + i * 34 } : { x: 40 + i * (920 / (n - 1)), y: 70 }));
-  }
   function renderRun() {
-    const st = RUNS[runType], v = small.matches, pos = runLayout(st);
-    const W = v ? 360 : 1000, H = v ? 36 + (st.length - 1) * 34 : 168;
-    const end = runCase >= 0 ? runCase : st.findLastIndex((s) => !s.todo);
+    const id = ++runId, R = RUNS[runType], G = R.g, v = small.matches;
+    const tracks = [{ k: 'Gültiger Aufruf', stop: -1 }, ...G.map((g, i) => ({ k: g.k, stop: i, todo: g.todo }))];
+    const n = G.length, W = v ? 360 : 1000;
+    const X0 = v ? 8 : 190, XE = v ? 338 : 860;
+    const gx = (i) => X0 + 24 + (i + 0.5) * ((XE - 40 - X0 - 24) / n);
+    const TOP = v ? 64 : 76, DY = v ? 38 : 30, ty = (i) => TOP + i * DY + (v ? 14 : 0);
+    const H = ty(tracks.length - 1) + 16;
     let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Durchlauf ${runType}">`;
-    // Gruppen je Komponente
+    // Komponenten über den Prüfungen
     let g0 = 0;
-    for (let i = 1; i <= st.length; i++) {
-      if (i < st.length && st[i].c === st[g0].c) continue;
-      const [name, cls] = GROUPS[st[g0].c], a = pos[g0], b = pos[i - 1];
-      if (v) s += `<line class="rg ${cls}" x1="112" y1="${a.y - 8}" x2="112" y2="${b.y + 8}"/><text class="rgl ${cls}" x="104" y="${(a.y + b.y) / 2 + 4}" text-anchor="end">${name}</text>`;
-      else s += `<line class="rg ${cls}" x1="${a.x - 14}" y1="30" x2="${b.x + 14}" y2="30"/><text class="rgl ${cls}" x="${(a.x + b.x) / 2}" y="20" text-anchor="middle">${name}</text>`;
+    for (let i = 1; i <= n; i++) {
+      if (i < n && G[i].c === G[g0].c) continue;
+      const [name, cls] = GROUPS[G[g0].c], a = gx(g0) - 12, b = gx(i - 1) + 12;
+      const short = v && b - a < 70 ? name.replace('Zahlungsdienst', 'Zahlung').replace('-Dienst', '') : name;
+      s += `<line class="rg ${cls}" x1="${a}" y1="14" x2="${b}" y2="14"/><text class="rgl ${cls}" x="${(a + b) / 2}" y="9" text-anchor="middle">${short}</text>`;
       g0 = i;
     }
-    // Strecke
-    const last = pos[pos.length - 1];
-    s += v ? `<line class="rl" x1="132" y1="${pos[0].y}" x2="132" y2="${last.y}"/>` : `<line class="rl" x1="${pos[0].x}" y1="70" x2="${last.x}" y2="70"/>`;
-    st.forEach((x, i) => {
-      const p = pos[i];
-      if (x.a && !v) s += `<line class="rt" x1="${p.x}" y1="76" x2="${p.x}" y2="84"/>`;
-      s += `<circle class="rs${x.todo ? ' todo' : ''}" data-i="${i}" cx="${p.x}" cy="${p.y}" r="5"/>`;
-      s += v ? `<text class="rlb${x.todo ? ' todo' : ''}" x="146" y="${p.y + 4}">${esc(x.t)}${i === end && runCase >= 0 ? '<tspan class="rab" visibility="hidden"> · Abbruch</tspan>' : ''}</text>`
-        : `<text class="rlb${x.todo ? ' todo' : ''}" x="${p.x}" y="${96 + (i % 2) * 15}" text-anchor="middle">${esc(x.t)}</text>`;
+    G.forEach((g, i) => {
+      const x = gx(i);
+      s += `<line class="gl${g.todo ? ' todo' : ''}" x1="${x}" y1="${v ? 40 : 52}" x2="${x}" y2="${H - 4}"/>`
+        + (v ? `<text class="gn${g.todo ? ' todo' : ''}" x="${x}" y="34" text-anchor="middle">${i + 1}</text>`
+          : `<text class="gn${g.todo ? ' todo' : ''}" x="${x}" y="${i % 2 ? 46 : 32}" text-anchor="middle">${esc(g.t)}</text>`);
     });
-    s += '<g id="run-ab"></g>';
-    s += `<circle class="rdot" id="run-dot" cx="0" cy="0" r="7" style="transform:translate(${pos[0].x}px,${pos[0].y}px)"/>`;
+    s += `<line class="gl end" x1="${XE}" y1="${v ? 40 : 52}" x2="${XE}" y2="${H - 4}"/>` + (v ? `<text class="gn" x="${XE}" y="34" text-anchor="end">Ziel</text>` : `<text class="gn end" x="${XE + 10}" y="${ty(0) + 4}">${esc(R.end)}</text>`);
+    tracks.forEach((t, i) => {
+      const y = ty(i);
+      s += `<line class="tr" x1="${X0}" y1="${y}" x2="${XE}" y2="${y}"/>`
+        + (v ? `<text class="tk" x="${X0}" y="${y - 8}">${esc(t.k)}</text>` : `<text class="tk" x="0" y="${y + 4}">${esc(t.k)}</text>`)
+        + `<g class="tok" data-i="${i}"><circle r="5.5" cx="${X0}" cy="${y}"/><path class="x" d="M-4 -4 L4 4 M4 -4 L-4 4"/></g>`;
+    });
     $('#run').innerHTML = s + '</svg>';
-    stepRun();
-  }
-  function stepRun() {
-    const st = RUNS[runType], v = small.matches, pos = runLayout(st);
-    const end = runCase >= 0 ? runCase : st.findLastIndex((x) => !x.todo);
-    const failed = runCase >= 0 && runPos > end;
-    document.querySelectorAll('#run .rs').forEach((c) => {
-      const i = +c.dataset.i;
-      c.classList.toggle('on', i <= Math.min(runPos, end) && !(failed && i === end) && !RUNS[runType][i].todo);
-      c.classList.toggle('fail', failed && i === end);
-    });
-    const p = pos[Math.min(runPos, end)], dot = $('#run-dot');
-    dot.classList.toggle('fail', failed);
-    dot.style.transform = `translate(${p.x}px,${p.y + (failed && !v ? 66 : 0)}px)`;
-    const ab = $('#run-ab');
-    if (failed && !v && !ab.innerHTML) {
-      ab.innerHTML = `<path class="rab-l" pathLength="1" d="M${p.x} 76 V136"/><text class="rab" x="${p.x}" y="162" text-anchor="${p.x > 800 ? 'end' : p.x < 200 ? 'start' : 'middle'}">Abbruch</text>`;
+    $('#run-legend').innerHTML = v ? G.map((g, i) => `<span${g.todo ? ' class="todo"' : ''}>${i + 1} ${esc(g.t)}</span>`).join('') : '';
+    const els = [...document.querySelectorAll('#run .tok')];
+    const D = 6500, t0 = performance.now();
+    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    $('#run-res').innerHTML = G.map((g) => `<span class="${g.todo ? 'todo' : ''}"><b>${esc(g.k)}</b>: ${esc(g.a)}${g.todo ? ' (nicht gebaut)' : ''}</span>`).join('');
+    function frame(now) {
+      if (id !== runId) return;
+      const p = Math.min(1, ((now - t0) % D) / D / 0.75);
+      const reach = X0 + p * (XE - X0);
+      els.forEach((el, i) => {
+        const t = tracks[i], stop = t.stop < 0 ? XE : gx(t.stop) - 9, x = Math.min(reach, stop), at = reach >= stop, y = ty(i);
+        const c = el.firstChild;
+        c.setAttribute('cx', x);
+        el.classList.toggle('fail', at && t.stop >= 0 && !t.todo);
+        el.classList.toggle('todo', at && !!t.todo);
+        el.classList.toggle('ok', at && t.stop < 0);
+        el.lastChild.setAttribute('transform', `translate(${x} ${y})`);
+      });
+      requestAnimationFrame(frame);
     }
-    const t = document.querySelector('#run .rab[visibility]'); if (t && failed) t.removeAttribute('visibility');
-    $('#run-res').textContent = runPos <= end ? '' : runCase >= 0 ? `Abbruch bei ${st[end].t}: ${st[end].a}. Das Handy zeigt einen Hinweis, der Verlauf protokolliert den Grund.`
-      : `Durchlauf vollständig.${st.some((x) => x.todo && x.c === 'F') ? ' Die Übergabe an die Fachseite ist nicht gebaut.' : ''}`;
-  }
-  function runTabs() {
-    $('#run-tabs').innerHTML = Object.keys(RUNS).map((k) => `<button type="button" role="tab" data-r="${k}" class="${k === runType ? 'on' : ''}">${k}</button>`).join('');
-    $('#run-cases').innerHTML = `<button type="button" data-c="-1" class="${runCase < 0 ? 'on' : ''}">Ohne Abbruch</button>`
-      + runCases().map((i) => `<button type="button" data-c="${i}" class="${runCase === i ? 'on' : ''}">${esc(RUNS[runType][i].t)}</button>`).join('')
-      + `<button type="button" class="auto${runAuto ? ' on' : ''}" data-auto>Alle nacheinander</button>`;
+    if (still) frame(t0 + D * 0.8); else requestAnimationFrame(frame);
   }
   function runStart() {
-    clearInterval(runTimer);
-    runPos = 0;
-    runTabs();
+    $('#run-tabs').innerHTML = Object.keys(RUNS).map((k) => `<button type="button" role="tab" data-r="${k}" class="${k === runType ? 'on' : ''}">${k}</button>`).join('');
     renderRun();
-    const st = RUNS[runType], end = runCase >= 0 ? runCase : st.findLastIndex((s) => !s.todo);
-    let hold = 0;
-    runTimer = setInterval(() => {
-      if (runPos <= end) { runPos++; stepRun(); return; }
-      if (++hold < 5 || !runAuto) return;
-      const cases = [-1, ...runCases()];
-      runCase = cases[(cases.indexOf(runCase) + 1) % cases.length];
-      runStart();
-    }, 500);
   }
-  $('#run-tabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { runType = b.dataset.r; runCase = -1; runStart(); } });
-  $('#run-cases').addEventListener('click', (e) => {
-    const b = e.target.closest('button'); if (!b) return;
-    if ('auto' in b.dataset) runAuto = !runAuto; else { runCase = +b.dataset.c; runAuto = false; }
-    runStart();
-  });
+  $('#run-tabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { runType = b.dataset.r; runStart(); } });
 
   // Nicht gebaut
   const SKETCHES = [
