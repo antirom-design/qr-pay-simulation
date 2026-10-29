@@ -235,6 +235,13 @@
     } else shown.has(b.dataset.comp) ? shown.delete(b.dataset.comp) : shown.add(b.dataset.comp);
     renderFilter();
   });
+  $('#filter-on').onchange = (ev) => {
+    const on = ev.target.checked;
+    $('#sim-filter').hidden = !on;
+    $('#log-copy').hidden = !on;
+    if (!on) shown.clear();
+    renderFilter();
+  };
   $('#log-copy').onclick = async () => {
     const rows = simEvents.filter((e) => !shown.size || shown.has(e.comp));
     const filter = shown.size ? [...shown].map((id) => COMP[id].name).join(', ') : 'alle Komponenten';

@@ -138,6 +138,9 @@ a { color: var(--info); }
 .log-col { display: flex; flex-direction: column; min-height: 0; max-height: calc(100dvh - 60px); }
 .log-tools { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; color: var(--ink-3); }
 .log-filter { margin-bottom: 8px; font-size: 12px; }
+.log-filter[hidden], #log-copy[hidden] { display: none; }
+.log-tools .check { padding: 0; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink); cursor: pointer; }
+.log-tools { min-height: 32px; }
 .log-filter .grps, .log-filter .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .log-filter .grps { margin-bottom: 6px; }
 .log-filter button { font: inherit; cursor: pointer; padding: 3px 9px; border-radius: 7px; border: 1px solid var(--line); background: #fff; color: var(--ink); }
