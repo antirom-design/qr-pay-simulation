@@ -138,7 +138,7 @@ route('POST', /^\/api\/schritt$/, async (req, res) => {
   const { token, text, actor } = await body(req);
   const d = C.decodeToken(token);
   if (!d.sigOk) return json(res, 400, { ok: false });
-  await C.log(d.payload.id, null, ['handy', 'simulation'].includes(actor) ? actor : 'anbieter', 'info', String(text).slice(0, 100));
+  await C.log(d.payload.id, null, ['handy', 'simulation'].includes(actor) ? actor : 'ident', 'info', String(text).slice(0, 100));
   json(res, 200, { ok: true });
 });
 route('POST', /^\/api\/adresse$/, async (req, res) => {
@@ -167,7 +167,7 @@ route('POST', /^\/api\/anbieter\/([\w-]+)\/schritt$/, async (req, res, [pid]) =>
   const { text } = await body(req);
   const p = await P.getPayment(pid);
   if (!p || p.status !== 'gestartet') return json(res, 200, { ok: false });
-  await C.log(p.code_id, p.id, 'anbieter', 'info', `${P.METHOD[p.method].name}: ${String(text).slice(0, 100)}`);
+  await C.log(p.code_id, p.id, 'zahlungsdienst', 'info', `${P.METHOD[p.method].name}: ${String(text).slice(0, 100)}`);
   json(res, 200, { ok: true });
 });
 

@@ -75,7 +75,8 @@ function manager() {
     </div>
     <div class="log-col">
       <div class="log-head"><div><h3 id="sim-title">Simulation</h3><small id="sim-sub"></small></div><button class="x" data-close aria-label="Schließen">×</button></div>
-      <div class="log-legend"><span class="a-manager">Manager</span><span class="a-handy">Handy</span><span class="a-server">Server</span><span class="a-anbieter">Anbieter</span></div>
+      <div class="log-tools"><small>Verlauf nach Komponente filtern: Wo muss programmiert werden?</small><button type="button" class="btn ghost sm" id="log-copy">Kopieren</button></div>
+      <div id="sim-filter" class="log-filter"></div>
       <ol id="sim-log" class="log"></ol>
       <div id="sim-subs" class="pay-hist"></div>
       <div id="sim-payments" class="pay-hist"></div>

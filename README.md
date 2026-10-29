@@ -12,7 +12,10 @@ Die komplette Strecke „Bezahlen per QR-Code“ zum Durchklicken. Es wird kein 
   `ADR` (Adressänderung nach Anmeldung mit Geburtsdatum), `DOK` (Dokument wie eine Befreiungsbescheinigung einreichen nach Online-Ausweis,
   Video-Ident oder Bank-Ident, verschlüsselt gespeichert, im Manager abrufbar), `INFO` (verwalteter Link, z. B. auf `/info`).
   Geheime Variablen (Name, Geburtsdatum, Adresse, Kontostand) stehen nur in der Datenbank, nie im QR-Code.
-- **Statuslog pro Code:** Jeder Schritt von Manager, Handy, Server und Anbieter erscheint live neben dem Handy.
+- **Statuslog pro Code:** Jeder Schritt erscheint live neben dem Handy und gehört zu genau einer Komponente:
+  Code-Manager, Handy-Frontend, Link-Management, Vorgangslogik, Zahlungslogik (Eigenentwicklung), Zahlungsdienst und Ident-Dienst
+  (extern angebunden, hier simuliert) sowie Übergabe ans Fachsystem (Platzhalter, noch zu bauen). Der Verlauf lässt sich nach
+  Komponente oder Art filtern und als Text kopieren. So sieht man pro Vorgang, wo programmiert werden muss.
 
 ## Was alles simuliert wird
 

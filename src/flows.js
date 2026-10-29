@@ -33,7 +33,7 @@ async function loginBirthdate(token, input, source) {
   const st = (await db.get('SELECT * FROM auth_state WHERE code_id = ?', [code.id])) || { fails: 0, locked_until: null };
   if (st.locked_until && new Date(st.locked_until) > new Date()) {
     const min = Math.ceil((new Date(st.locked_until) - Date.now()) / 60e3);
-    await C.log(code.id, null, 'server', 'fehler', 'Anmeldung blockiert, Code ist nach zu vielen Fehlversuchen gesperrt');
+    await C.log(code.id, null, 'link', 'fehler', 'Anmeldung blockiert, Code ist nach zu vielen Fehlversuchen gesperrt');
     throw err(423, `Zu viele Fehlversuche. Bitte in ${min} Minuten erneut versuchen.`);
   }
   const given = C.parseDate(input);
@@ -41,7 +41,7 @@ async function loginBirthdate(token, input, source) {
     await db.run(`INSERT INTO auth_state (code_id, fails, locked_until) VALUES (?, 0, NULL)
       ON CONFLICT(code_id) DO UPDATE SET fails = 0, locked_until = NULL`, [code.id]);
     await C.log(code.id, null, source, 'info', 'Geburtsdatum eingegeben');
-    await C.log(code.id, null, 'server', 'ok', 'Anmeldung erfolgreich, Sitzung für 10 Minuten gestartet');
+    await C.log(code.id, null, 'link', 'ok', 'Anmeldung erfolgreich, Sitzung für 10 Minuten gestartet');
     return { session: C.sessionFor(code, 'geburtsdatum'), ...(await dataFor(code)) };
   }
   const fails = Number(st.fails) + 1;
@@ -50,10 +50,10 @@ async function loginBirthdate(token, input, source) {
     ON CONFLICT(code_id) DO UPDATE SET fails = excluded.fails, locked_until = excluded.locked_until`, [code.id, lock ? 0 : fails, lock]);
   await C.log(code.id, null, source, 'info', 'Geburtsdatum eingegeben');
   if (lock) {
-    await C.log(code.id, null, 'server', 'fehler', `${MAX_FAILS}. Fehlversuch, Code für ${LOCK_MIN} Minuten gesperrt`);
+    await C.log(code.id, null, 'link', 'fehler', `${MAX_FAILS}. Fehlversuch, Code für ${LOCK_MIN} Minuten gesperrt`);
     throw err(423, `Das Geburtsdatum stimmt nicht. Aus Sicherheitsgründen ist der Zugang jetzt für ${LOCK_MIN} Minuten gesperrt.`);
   }
-  await C.log(code.id, null, 'server', 'warn', `Falsches Geburtsdatum (Versuch ${fails} von ${MAX_FAILS})`);
+  await C.log(code.id, null, 'link', 'warn', `Falsches Geburtsdatum (Versuch ${fails} von ${MAX_FAILS})`);
   throw err(401, `Das Geburtsdatum stimmt nicht. Noch ${MAX_FAILS - fails} Versuch${MAX_FAILS - fails === 1 ? '' : 'e'}.`);
 }
 
@@ -67,13 +67,13 @@ async function ident(token, method, outcome, source) {
   const person = outcome === 'mismatch'
     ? { name: 'Erika Musterfrau', geburtsdatum: '1964-08-12' }
     : { name: code.vars.name, geburtsdatum: code.vars.geburtsdatum };
-  await C.log(code.id, null, 'anbieter', 'info', `${m.name}: Identität geprüft, Daten an Server übermittelt (Niveau ${m.niveau})`);
+  await C.log(code.id, null, 'ident', 'info', `${m.name}: Identität geprüft, Daten an Server übermittelt (Niveau ${m.niveau})`);
   const match = person.name.trim().toLowerCase() === code.vars.name.trim().toLowerCase() && person.geburtsdatum === code.vars.geburtsdatum;
   if (!match) {
-    await C.log(code.id, null, 'server', 'fehler', `Abgleich fehlgeschlagen: identifizierte Person (${mask(person.name)}) passt nicht zum Vorgang`);
+    await C.log(code.id, null, 'link', 'fehler', `Abgleich fehlgeschlagen: identifizierte Person (${mask(person.name)}) passt nicht zum Vorgang`);
     throw err(403, 'Die identifizierte Person passt nicht zu diesem Vorgang. Es wurden keine Daten übertragen.');
   }
-  await C.log(code.id, null, 'server', 'ok', `Abgleich Name und Geburtsdatum erfolgreich (${mask(person.name)}), Upload freigegeben`);
+  await C.log(code.id, null, 'link', 'ok', `Abgleich Name und Geburtsdatum erfolgreich (${mask(person.name)}), Upload freigegeben`);
   return { session: C.sessionFor(code, `ident:${m.id}`, 15), person: mask(person.name), method: m.name, niveau: m.niveau, ...(await dataFor(code)) };
 }
 
@@ -112,9 +112,10 @@ async function changeAddress(token, session, input, source) {
   await db.run('INSERT INTO submissions (id, code_id, kind, data, created_at) VALUES (?, ?, ?, ?, ?)',
     [id, code.id, 'adresse', JSON.stringify({ alt: old, neu: a }), C.now()]);
   await C.log(code.id, id, source, 'info', 'Neue Anschrift eingegeben und bestätigt');
-  await C.log(code.id, id, 'server', 'ok', `Adressänderung ${id} gespeichert: ${a.strasse}, ${a.plz} ${a.ort} (gültig ab ${a.ab})`);
+  await C.log(code.id, id, 'vorgang', 'ok', `Adressänderung ${id} gespeichert: ${a.strasse}, ${a.plz} ${a.ort} (gültig ab ${a.ab})`);
   if (code.single_use) await C.setStatus(code.id, 'erledigt');
-  await C.log(code.id, id, 'server', 'info', 'Übergabe an Sachbearbeitung / Kundenstamm (simuliert), Bestätigung an Kunde erzeugt');
+  await C.log(code.id, id, 'vorgang', 'info', 'Bestätigung für den Kunden erzeugt');
+  await C.log(code.id, id, 'uebergabe', 'info', 'Adressänderung an Kundenstamm übergeben (Platzhalter, Schnittstelle noch nicht gebaut)');
   return { id, alt: old, neu: a, createdAt: C.now() };
 }
 
@@ -153,9 +154,10 @@ async function uploadDocument(token, session, input, source) {
   await db.run('INSERT INTO submissions (id, code_id, kind, data, blob, created_at) VALUES (?, ?, ?, ?, ?, ?)',
     [id, code.id, 'dokument', JSON.stringify(meta), encrypt(buf), C.now()]);
   await C.log(code.id, id, source, 'info', `Datei „${meta.filename}“ ausgewählt und hochgeladen (${Math.round(buf.length / 1024)} KB)`);
-  await C.log(code.id, id, 'server', 'ok', `Prüfsumme bestätigt (SHA-256 ${sha256.slice(0, 12)}…), Dokument verschlüsselt gespeichert (AES-256-GCM)`);
+  await C.log(code.id, id, 'vorgang', 'ok', `Prüfsumme bestätigt (SHA-256 ${sha256.slice(0, 12)}…), Dokument verschlüsselt gespeichert (AES-256-GCM)`);
   if (code.single_use) await C.setStatus(code.id, 'erledigt');
-  await C.log(code.id, id, 'server', 'info', `Eingangsbestätigung ${id} erzeugt, Vorgang an Sachbearbeitung übergeben`);
+  await C.log(code.id, id, 'vorgang', 'info', 'Bestätigung für den Kunden erzeugt');
+  await C.log(code.id, id, 'uebergabe', 'info', `Eingang ${id} an die Sachbearbeitung übergeben (Platzhalter, Schnittstelle noch nicht gebaut)`);
   return { id, ...meta, createdAt: C.now() };
 }
 

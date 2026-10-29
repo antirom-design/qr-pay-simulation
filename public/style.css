@@ -136,21 +136,37 @@ a { color: var(--info); }
 .phone-notch { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 96px; height: 26px; border-radius: 14px; background: #111; z-index: 2; }
 .phone-actions { display: flex; gap: 6px; }
 .log-col { display: flex; flex-direction: column; min-height: 0; max-height: calc(100dvh - 60px); }
-.log-legend { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; font-size: 12px; }
-.log-legend span { padding: 2px 8px; border-radius: 6px; border-left: 3px solid #ccc; background: #f4f6f9; }
+.log-tools { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; color: var(--ink-3); }
+.log-filter { margin-bottom: 8px; font-size: 12px; }
+.log-filter .grps, .log-filter .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.log-filter .grps { margin-bottom: 6px; }
+.log-filter button { font: inherit; cursor: pointer; padding: 3px 9px; border-radius: 7px; border: 1px solid var(--line); background: #fff; color: var(--ink); }
+.log-filter button b { font-weight: 600; color: var(--ink-3); margin-left: 2px; }
+.log-filter .chip { border-left: 4px solid #ccc; background: #f4f6f9; border-color: transparent; }
+.log-filter .chip.zero { opacity: .45; }
+.log-filter button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+.log-filter button.on b { color: #cbd5e1; }
+.log-filter .g-offen { border-style: dashed; border-color: #f59e0b; }
+.log-filter .g-extern { background: #f1f5f9; }
 .log { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; min-height: 180px; border: 1px solid var(--line); border-radius: 12px; font-size: 13.5px; }
-.log li { display: grid; grid-template-columns: 62px 74px minmax(0, 1fr); gap: 8px; padding: 7px 10px; border-left: 3px solid #ccc; border-bottom: 1px solid #f0f2f6; animation: in .3s; }
+.log li { display: grid; grid-template-columns: 62px 78px minmax(0, 1fr); gap: 8px; padding: 7px 10px; border-left: 3px solid #ccc; border-bottom: 1px solid #f0f2f6; animation: in .3s; }
 .log li:last-child { border-bottom: 0; }
 .log time { color: var(--ink-3); font-family: var(--mono); font-size: 12px; }
-.log .actor { font-weight: 600; text-transform: capitalize; }
+.log .actor { font-weight: 600; }
+.log li[hidden] { display: none; }
 .log .msg i { color: var(--ink-3); font-style: normal; font-size: 11.5px; }
 .log li.k-ok .msg { color: #08744f; }
 .log li.k-warn .msg { color: var(--warn); }
 .log li.k-fehler .msg { color: var(--err); font-weight: 500; }
-.a-manager { border-left-color: #8b5cf6 !important; }
-.a-handy, .a-simulation { border-left-color: #0ea5e9 !important; }
-.a-server { border-left-color: #0f1b2d !important; }
-.a-anbieter { border-left-color: #f59e0b !important; }
+.c-manager { border-left-color: #8b5cf6 !important; }
+.c-handy { border-left-color: #06b6d4 !important; }
+.c-link { border-left-color: #2563eb !important; }
+.c-vorgang { border-left-color: #0d9488 !important; }
+.c-zahlung { border-left-color: #16a34a !important; }
+.c-uebergabe { border-left-color: #f59e0b !important; border-left-style: dashed !important; }
+.c-zahlungsdienst { border-left-color: #64748b !important; }
+.c-ident { border-left-color: #a8b3c4 !important; }
+.log li.c-zahlungsdienst, .log li.c-ident { background: #f8fafc; }
 .pay-hist h4 { font-size: 13px; margin: 14px 0 6px; }
 .pay-hist table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .pay-hist td { padding: 5px 6px; border-bottom: 1px solid #f0f2f6; }

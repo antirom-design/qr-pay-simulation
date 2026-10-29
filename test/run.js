@@ -112,7 +112,7 @@ server.listen(0, async () => {
     // Verlauf
     r = await call('GET', `/api/codes/${code.id}/events`);
     const actors = new Set(r.body.events.map((e) => e.actor));
-    for (const x of ['manager', 'server', 'anbieter', 'handy', 'simulation']) assert.ok(actors.has(x), x);
+    for (const x of ['manager', 'link', 'zahlung', 'zahlungsdienst', 'uebergabe', 'handy', 'simulation']) assert.ok(actors.has(x), x);
     assert.equal(r.body.payments.length, 4);
     ok(`Statuslog mit ${r.body.events.length} Einträgen und 4 Zahlungen`);
 

@@ -38,7 +38,7 @@ async function expireStale() {
   const stale = await db.all(`SELECT * FROM payments WHERE status = 'gestartet' AND created_at < ?`, [limit]);
   for (const p of stale) {
     await setPayment(p.id, 'zeitüberschreitung', `Keine Rückmeldung vom Anbieter innerhalb von ${STALE_MIN} Minuten`);
-    await C.log(p.code_id, p.id, 'server', 'warn', `Zahlung ${p.id} automatisch abgelaufen (keine Rückmeldung nach ${STALE_MIN} Min.)`);
+    await C.log(p.code_id, p.id, 'zahlung', 'warn', `Zahlung ${p.id} automatisch abgelaufen (keine Rückmeldung nach ${STALE_MIN} Min.)`);
   }
 }
 
@@ -55,7 +55,7 @@ async function decode(token, { source = 'handy', count = true, quiet = false } =
   const steps = [];
   const step = (label, ok, detail) => { steps.push({ label, ok, detail }); return ok; };
   const fail = async (error, codeId) => {
-    if (codeId && !quiet) await C.log(codeId, null, 'server', 'fehler', `Scan abgelehnt: ${error}`);
+    if (codeId && !quiet) await C.log(codeId, null, 'link', 'fehler', `Scan abgelehnt: ${error}`);
     return { ok: false, steps, error };
   };
 
@@ -86,13 +86,13 @@ async function decode(token, { source = 'handy', count = true, quiet = false } =
   const paid = await paidPayment(code.id);
   if (code.status === 'bezahlt' && paid) {
     step('Status geprüft', true, 'Bereits bezahlt');
-    if (!quiet) await C.log(code.id, null, 'server', 'info', 'Code ist bereits bezahlt, Beleg wird angezeigt');
+    if (!quiet) await C.log(code.id, null, 'link', 'info', 'Code ist bereits bezahlt, Beleg wird angezeigt');
     return { ok: true, steps, code: publicCode(code), alreadyPaid: publicPayment(paid) };
   }
   if (code.status === 'erledigt') {
     const sub = await db.get('SELECT * FROM submissions WHERE code_id = ? ORDER BY created_at DESC LIMIT 1', [code.id]);
     step('Status geprüft', true, 'Bereits erledigt');
-    if (!quiet) await C.log(code.id, null, 'server', 'info', 'Vorgang ist bereits erledigt, Bestätigung wird angezeigt');
+    if (!quiet) await C.log(code.id, null, 'link', 'info', 'Vorgang ist bereits erledigt, Bestätigung wird angezeigt');
     return { ok: true, steps, code: publicCode(code), alreadyDone: sub && { id: sub.id, kind: sub.kind, createdAt: sub.created_at } };
   }
   if (!step('Code aktiv', code.status === 'aktiv', code.status)) return fail('Dieser Code wurde deaktiviert.', code.id);
@@ -100,18 +100,21 @@ async function decode(token, { source = 'handy', count = true, quiet = false } =
   if (!step('Gültigkeit', !expired, code.expires_at ? `bis ${new Date(code.expires_at).toLocaleString('de-DE')}` : 'unbegrenzt'))
     return fail('Dieser Code ist abgelaufen.', code.id);
 
+  // Jede bestandene Prüfung einzeln protokollieren: das ist die Arbeit des Link-Managements
+  if (!quiet) for (const s of steps) await C.log(code.id, null, 'link', 'info', `${s.label}: ${s.detail}`);
+
   if (code.type === 'PAY') {
     const v = code.vars;
     step('Endbetrag berechnet', true, `${eur(v.betrag)} + ${eur(v.gebuehr)} = ${eur(v.betrag + v.gebuehr)}`);
-    if (!quiet) await C.log(code.id, null, 'server', 'ok', `Decoding erfolgreich, Endbetrag ${eur(v.betrag + v.gebuehr)}`);
+    if (!quiet) await C.log(code.id, null, 'link', 'ok', `Decoding erfolgreich, Endbetrag ${eur(v.betrag + v.gebuehr)}`);
   } else if (type.auth === 'geburtsdatum') {
     step('Anmeldung erforderlich', true, 'Geburtsdatum, max. 3 Versuche');
-    if (!quiet) await C.log(code.id, null, 'server', 'ok', 'Decoding erfolgreich, Kunde muss sich mit dem Geburtsdatum anmelden');
+    if (!quiet) await C.log(code.id, null, 'link', 'ok', 'Decoding erfolgreich, Kunde muss sich mit dem Geburtsdatum anmelden');
   } else if (type.auth === 'ident') {
     step('Identifizierung erforderlich', true, `Vertrauensniveau ${code.vars.niveau}`);
-    if (!quiet) await C.log(code.id, null, 'server', 'ok', `Decoding erfolgreich, Identifizierung mit Vertrauensniveau „${code.vars.niveau}“ nötig`);
+    if (!quiet) await C.log(code.id, null, 'link', 'ok', `Decoding erfolgreich, Identifizierung mit Vertrauensniveau „${code.vars.niveau}“ nötig`);
   } else {
-    if (!quiet) await C.log(code.id, null, 'server', 'ok', 'Decoding erfolgreich');
+    if (!quiet) await C.log(code.id, null, 'link', 'ok', 'Decoding erfolgreich');
   }
   return { ok: true, steps, code: publicCode(code), auth: type.auth, methods: code.type === 'PAY' ? METHODS : undefined,
     idents: type.auth === 'ident' ? allowedIdents(code) : undefined };
@@ -152,7 +155,7 @@ async function start(token, methodId, source = 'handy', session) {
   await db.run(`INSERT INTO payments (id, code_id, method, amount, fee, total, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'gestartet', ?, ?)`,
     [id, res.code.id, method.id, betrag, gebuehr, betrag + gebuehr, t, t]);
   await C.log(res.code.id, id, source, 'info', `Zahlart gewählt: ${method.name}`);
-  await C.log(res.code.id, id, 'server', 'info', `Zahlung ${id} angelegt, Weiterleitung zum Checkout von ${method.name} (${eur(betrag + gebuehr)})`);
+  await C.log(res.code.id, id, 'zahlung', 'info', `Zahlung ${id} angelegt, Weiterleitung zum Checkout von ${method.name} (${eur(betrag + gebuehr)})`);
   return { paymentId: id, redirect: `/anbieter/${method.id}/${id}` };
 }
 
@@ -174,7 +177,7 @@ async function complete(paymentId, result, reason) {
   const name = METHOD[p.method].name;
   const code = await C.getCode(p.code_id);
   const ref = `${p.method.toUpperCase()}-${C.rid(10)}`;
-  await C.log(p.code_id, p.id, 'anbieter', o.kind, `${name} sendet Webhook „${o.hook}“${reason ? `: ${reason}` : ''}`, { ref, betrag: p.total });
+  await C.log(p.code_id, p.id, 'zahlungsdienst', o.kind, `${name} sendet Webhook „${o.hook}“${reason ? `: ${reason}` : ''}`, { ref, betrag: p.total });
 
   if (o.status === 'bezahlt') {
     if (code.type === 'KONTO') {
@@ -182,35 +185,37 @@ async function complete(paymentId, result, reason) {
       const { open } = await kontoState(code);
       if (p.total > open) {
         await setPayment(p.id, 'abgelehnt', 'Der Betrag war inzwischen schon ausgeglichen, Betrag wird erstattet', ref);
-        await C.log(p.code_id, p.id, 'server', 'fehler', `Überzahlung erkannt (offen nur noch ${eur(open)}), Erstattung wird ausgelöst`);
+        await C.log(p.code_id, p.id, 'zahlung', 'fehler', `Überzahlung erkannt (offen nur noch ${eur(open)}), Erstattung wird ausgelöst`);
         return { redirect: `/ergebnis/${p.id}` };
       }
       await setPayment(p.id, 'bezahlt', null, ref);
-      await C.log(p.code_id, p.id, 'server', 'ok', `Ausgleichszahlung ${eur(p.total)} verbucht, neuer Kontostand ${eur((await kontoState(code)).saldo)}`);
+      await C.log(p.code_id, p.id, 'zahlung', 'ok', `Ausgleichszahlung ${eur(p.total)} verbucht, neuer Kontostand ${eur((await kontoState(code)).saldo)}`);
+      await C.log(p.code_id, p.id, 'uebergabe', 'info', 'Zahlungseingang an die Forderungsverwaltung gemeldet (Platzhalter, Schnittstelle noch nicht gebaut)');
       return { redirect: `/ergebnis/${p.id}` };
     }
     // Doppelzahlung verhindern: Code inzwischen anders bezahlt oder geändert?
     const other = await paidPayment(p.code_id);
     if (code.single_use && other) {
       await setPayment(p.id, 'abgelehnt', 'Code wurde parallel bereits bezahlt, Betrag wird erstattet', ref);
-      await C.log(p.code_id, p.id, 'server', 'fehler', `Doppelzahlung erkannt (schon bezahlt mit ${other.id}), Erstattung wird ausgelöst`);
+      await C.log(p.code_id, p.id, 'zahlung', 'fehler', `Doppelzahlung erkannt (schon bezahlt mit ${other.id}), Erstattung wird ausgelöst`);
       return { redirect: `/ergebnis/${p.id}` };
     }
     if (code.vars.betrag + code.vars.gebuehr !== p.total) {
       await setPayment(p.id, 'abgelehnt', 'Betrag passt nicht mehr zum Code, Betrag wird erstattet', ref);
-      await C.log(p.code_id, p.id, 'server', 'fehler', 'Betragsabgleich fehlgeschlagen, Code wurde während der Zahlung geändert');
+      await C.log(p.code_id, p.id, 'zahlung', 'fehler', 'Betragsabgleich fehlgeschlagen, Code wurde während der Zahlung geändert');
       return { redirect: `/ergebnis/${p.id}` };
     }
     await setPayment(p.id, 'bezahlt', null, ref);
-    await C.log(p.code_id, p.id, 'server', 'ok', `Signatur des Webhooks geprüft, Betrag ${eur(p.total)} abgeglichen, Zahlung verbucht`);
+    await C.log(p.code_id, p.id, 'zahlung', 'ok', `Signatur des Webhooks geprüft, Betrag ${eur(p.total)} abgeglichen, Zahlung verbucht`);
     if (code.single_use) {
       await C.setStatus(p.code_id, 'bezahlt');
-      await C.log(p.code_id, p.id, 'server', 'ok', 'Code auf „bezahlt“ gesetzt (Einmal-Code), weitere Scans zeigen nur den Beleg');
+      await C.log(p.code_id, p.id, 'link', 'ok', 'Code auf „bezahlt“ gesetzt (Einmal-Code), weitere Scans zeigen nur den Beleg');
     }
-    await C.log(p.code_id, p.id, 'server', 'info', `Bestätigung an Kunde ${code.vars.kundennummer} erzeugt (Beleg ${p.id})`);
+    await C.log(p.code_id, p.id, 'zahlung', 'info', `Bestätigung an Kunde ${code.vars.kundennummer} erzeugt (Beleg ${p.id})`);
+    await C.log(p.code_id, p.id, 'uebergabe', 'info', 'Zahlungseingang an die Forderungsverwaltung gemeldet (Platzhalter, Schnittstelle noch nicht gebaut)');
   } else {
     await setPayment(p.id, o.status, reason, ref);
-    await C.log(p.code_id, p.id, 'server', o.kind, `Zahlung ${p.id}: ${o.status}. Code bleibt offen, Kunde kann erneut zahlen`);
+    await C.log(p.code_id, p.id, 'zahlung', o.kind, `Zahlung ${p.id}: ${o.status}. Code bleibt offen, Kunde kann erneut zahlen`);
   }
   return { redirect: `/ergebnis/${p.id}` };
 }

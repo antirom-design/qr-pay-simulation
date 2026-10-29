@@ -189,6 +189,60 @@
     d.addEventListener('click', (e) => { if (e.target === d || e.target.closest('[data-close]')) d.close(); });
   });
 
+  // Jede Logzeile gehört zu einer Komponente. Der Filter zeigt, wo programmiert werden muss.
+  const COMPONENTS = [
+    { id: 'manager', name: 'Code-Manager', short: 'Manager', art: 'eigen', hint: 'Codes anlegen, ändern, sperren' },
+    { id: 'handy', name: 'Handy-Frontend', short: 'Handy', art: 'eigen', hint: 'Scan, Anzeige, Formulare' },
+    { id: 'link', name: 'Link-Management', short: 'Link', art: 'eigen', hint: 'Signatur, Version, Status, Anmeldung, Sitzung' },
+    { id: 'vorgang', name: 'Vorgangslogik', short: 'Vorgang', art: 'eigen', hint: 'Adresse, Dokument, Kontostand' },
+    { id: 'zahlung', name: 'Zahlungslogik', short: 'Zahlung', art: 'eigen', hint: 'Zahlung anlegen, abgleichen, verbuchen' },
+    { id: 'uebergabe', name: 'Übergabe Fachsystem', short: 'Übergabe', art: 'offen', hint: 'Platzhalter, Schnittstelle noch nicht gebaut' },
+    { id: 'zahlungsdienst', name: 'Zahlungsdienst', short: 'Zahldienst', art: 'extern', hint: 'PayPal, Wero, Karte … (simuliert)' },
+    { id: 'ident', name: 'Ident-Dienst', short: 'Ident', art: 'extern', hint: 'eID, Video, Bank (simuliert)' },
+  ];
+  const COMP = Object.fromEntries(COMPONENTS.map((c) => [c.id, c]));
+  const ARTS = { eigen: 'Eigenentwicklung', extern: 'Extern angebunden', offen: 'Noch zu bauen' };
+  // Ältere Einträge kennen nur "server" und "anbieter"
+  const compOf = (e) => (e.actor === 'simulation' ? 'handy'
+    : e.actor === 'server' ? (e.payment_id ? 'zahlung' : 'link')
+    : e.actor === 'anbieter' ? (e.payment_id ? 'zahlungsdienst' : 'ident')
+    : COMP[e.actor] ? e.actor : 'link');
+  const shown = new Set(); // leer = alle
+  let simEvents = [];
+
+  function renderFilter() {
+    const count = (ids) => simEvents.filter((e) => ids.includes(e.comp)).length;
+    const chip = (c) => `<button type="button" class="chip c-${c.id}${shown.has(c.id) ? ' on' : ''}${count([c.id]) ? '' : ' zero'}" data-comp="${c.id}" title="${esc(c.hint)}">${esc(c.name)} <b>${count([c.id])}</b></button>`;
+    const group = (art) => {
+      const ids = COMPONENTS.filter((c) => c.art === art).map((c) => c.id);
+      const on = shown.size && ids.length === shown.size && ids.every((id) => shown.has(id));
+      return `<button type="button" class="grp g-${art}${on ? ' on' : ''}" data-art="${art}">${ARTS[art]} <b>${count(ids)}</b></button>`;
+    };
+    $('#sim-filter').innerHTML = `
+      <div class="grps"><button type="button" class="grp${shown.size ? '' : ' on'}" data-all>Alle <b>${simEvents.length}</b></button>${Object.keys(ARTS).map(group).join('')}</div>
+      <div class="chips">${COMPONENTS.map(chip).join('')}</div>`;
+    for (const li of $('#sim-log').children) li.hidden = shown.size > 0 && !shown.has(li.dataset.comp);
+  }
+  $('#sim-filter').addEventListener('click', (ev) => {
+    const b = ev.target.closest('button');
+    if (!b) return;
+    if (b.dataset.all !== undefined) shown.clear();
+    else if (b.dataset.art) {
+      const ids = COMPONENTS.filter((c) => c.art === b.dataset.art).map((c) => c.id);
+      const same = ids.length === shown.size && ids.every((id) => shown.has(id));
+      shown.clear();
+      if (!same) ids.forEach((id) => shown.add(id));
+    } else shown.has(b.dataset.comp) ? shown.delete(b.dataset.comp) : shown.add(b.dataset.comp);
+    renderFilter();
+  });
+  $('#log-copy').onclick = async () => {
+    const rows = simEvents.filter((e) => !shown.size || shown.has(e.comp));
+    const filter = shown.size ? [...shown].map((id) => COMP[id].name).join(', ') : 'alle Komponenten';
+    const text = [`Verlauf ${simCode.id} (${simCode.label}), Filter: ${filter}`, '',
+      ...rows.map((e) => `${time(e.ts)}  ${COMP[e.comp].name.padEnd(20)} ${ARTS[COMP[e.comp].art].padEnd(18)} ${e.message}`)].join('\n');
+    try { await navigator.clipboard.writeText(text); toast(`${rows.length} Zeilen kopiert`); } catch { toast('Kopieren nicht möglich'); }
+  };
+
   let poll = null, lastEvent = 0, simCode = null;
   function openSim(c, withPhone) {
     simCode = c;
@@ -199,6 +253,8 @@
     $('#sim-log').innerHTML = '';
     $('#sim-payments').innerHTML = '';
     lastEvent = 0;
+    simEvents = [];
+    renderFilter();
     const url = `/s/${c.token}`;
     $('#sim-frame').src = withPhone ? url : 'about:blank';
     $('#sim-open').href = url;
@@ -217,12 +273,16 @@
     const log = $('#sim-log');
     for (const e of r.events) {
       lastEvent = e.id;
+      e.comp = compOf(e);
+      simEvents.push(e);
+      const c = COMP[e.comp];
       const li = document.createElement('li');
-      li.className = `k-${e.kind} a-${e.actor}`;
-      li.innerHTML = `<time>${time(e.ts)}</time><span class="actor">${esc(e.actor)}</span><span class="msg">${esc(e.message)}${e.payment_id ? ` <i class="mono">${esc(e.payment_id)}</i>` : ''}</span>`;
+      li.className = `k-${e.kind} c-${c.id}`;
+      li.dataset.comp = c.id;
+      li.innerHTML = `<time>${time(e.ts)}</time><span class="actor" title="${esc(c.name)} · ${ARTS[c.art]}">${esc(c.short)}</span><span class="msg">${esc(e.message)}${e.payment_id ? ` <i class="mono">${esc(e.payment_id)}</i>` : ''}</span>`;
       log.appendChild(li);
     }
-    if (r.events.length) log.scrollTop = log.scrollHeight;
+    if (r.events.length) { renderFilter(); log.scrollTop = log.scrollHeight; }
     const subs = (r.submissions || []).map((x) => x.kind === 'adresse'
       ? `<tr><td class="mono">${esc(x.id)}</td><td>Adresse</td><td colspan="2">${esc(x.alt.strasse)}, ${esc(x.alt.plz)} ${esc(x.alt.ort)} → <b>${esc(x.neu.strasse)}, ${esc(x.neu.plz)} ${esc(x.neu.ort)}</b> ab ${dmy(x.neu.ab)}</td></tr>`
       : `<tr><td class="mono">${esc(x.id)}</td><td>Dokument</td><td><a href="/api/eingang/${esc(x.id)}/datei" target="_blank" rel="noopener">${esc(x.filename)}</a> · ${Math.max(1, Math.round(x.size / 1024))} KB</td><td><span class="badge p-bezahlt">${esc(x.ident)} · ${esc(x.niveau)}</span></td></tr>`).join('');
