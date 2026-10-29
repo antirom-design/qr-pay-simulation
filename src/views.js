@@ -24,7 +24,7 @@ function manager() {
   return page('QR-Pay Simulation', 'manager', `
 <header class="top">
   <div class="brand"><span class="logo" aria-hidden="true"></span><div><strong>QR-Pay</strong><small>Simulation · keine echten Zahlungen</small></div></div>
-  <div class="top-meta"><a href="/info">So funktioniert's</a><span id="meta"></span></div>
+  <div class="top-meta"><a href="/hilfe">Hilfe</a><a href="/info">So funktioniert's</a><span id="meta"></span></div>
 </header>
 
 <main class="wrap">
@@ -204,10 +204,81 @@ function info() {
 </main>`);
 }
 
+function help() {
+  return page('Hilfe · Konzept und Abläufe', 'help', `
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap">
+<link rel="stylesheet" href="/static/help.css">
+<header class="top">
+  <div class="brand"><a href="/" class="logo" aria-label="Zum Manager"></a><div><strong>QR-Pay · Hilfe</strong><small>Konzept, Datenflüsse, Sicherheit</small></div></div>
+  <nav class="top-meta h-nav"><a href="#konzept">Konzept</a><a href="#komponenten">Komponenten</a><a href="#ablaeufe">Abläufe</a><a href="#sicherheit">Sicherheit</a><a href="#skizzen">Noch zu bauen</a><a href="/">Zum Manager</a></nav>
+</header>
+
+<section class="h-hero" id="konzept">
+  <div class="h-wrap">
+    <p class="h-kicker">Das Konzept</p>
+    <h1>Bezahlen ist eingekauft.<br>Der Link ist das Produkt.</h1>
+    <p class="h-lead">Ein QR-Code auf Papier öffnet Monate später genau einen Vorgang für genau eine Person. Dazwischen liegt das <b>Link-Management</b>: prüfen, ob der Code echt, aktuell und gültig ist, wer ihn nutzen darf und was danach mit dem Ergebnis passiert. Zahlungs- und Ident-Dienste sind fertige Bausteine, die wir anbinden.</p>
+    <div class="h-hero-svg" id="hero"></div>
+  </div>
+</section>
+
+<main class="h-wrap">
+  <section class="h-sec" id="komponenten">
+    <p class="h-kicker">Komponenten</p>
+    <h2>Wo programmiert wird</h2>
+    <p class="h-text">Jeder Schritt im Verlauf gehört zu einer dieser Komponenten. Die punktierten Wege laufen in der Simulation schon, die gestrichelte Übergabe rechts gibt es noch nicht.</p>
+    <div class="h-legend">
+      <span class="lg core">Kern: Link-Management</span><span class="lg own">Eigenentwicklung</span><span class="lg ext">Externer Dienst, angebunden</span><span class="lg todo">Noch zu bauen</span>
+    </div>
+    <div class="h-scroll"><div id="map"></div></div>
+  </section>
+
+  <section class="h-sec" id="ablaeufe">
+    <p class="h-kicker">Abläufe</p>
+    <h2>Jeder Prozessschritt, animiert</h2>
+    <p class="h-text">Wähle eine Code-Art. Die Animation zeigt, welche Komponente mit welcher spricht. Ein Schild markiert eine Sicherheitsprüfung, gestrichelte Schritte sind noch nicht gebaut. Klick auf einen Schritt springt direkt dorthin.</p>
+    <div class="flow-tabs" id="flow-tabs" role="tablist"></div>
+    <div class="flow-box">
+      <div class="h-scroll"><div id="seq"></div></div>
+      <aside class="flow-side" aria-live="polite">
+        <div class="fs-count" id="fs-count"></div>
+        <h3 id="fs-title"></h3>
+        <p id="fs-text"></p>
+        <div id="fs-chips" class="fs-chips"></div>
+        <div class="fs-ctrl">
+          <button type="button" id="fs-prev" aria-label="Zurück">‹</button>
+          <button type="button" id="fs-play" class="play" aria-label="Abspielen"></button>
+          <button type="button" id="fs-next" aria-label="Weiter">›</button>
+          <button type="button" id="fs-restart" class="txt">Von vorn</button>
+        </div>
+        <div class="fs-bar"><i id="fs-bar"></i></div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="h-sec" id="sicherheit">
+    <p class="h-kicker">Sicherheit</p>
+    <h2>Jeder Scan läuft durch dieselben Prüfungen</h2>
+    <p class="h-text">Ein gültiger Code kommt durch alle Tore. Ein manipulierter Code scheitert an der Signatur, ein alter Ausdruck an der Version, ein falsches Geburtsdatum an der Anmeldung.</p>
+    <div class="h-scroll"><div id="gates"></div></div>
+    <div class="sec-grid" id="sec-grid"></div>
+  </section>
+
+  <section class="h-sec sketch-sec" id="skizzen">
+    <p class="h-kicker">Noch nicht gebaut</p>
+    <h2>Tech-Skizzen für die nächsten Schritte</h2>
+    <p class="h-text">Diese Teile fehlen in der Simulation. Die Skizzen zeigen, wie sie aussehen könnten, und sind Diskussionsgrundlage, keine fertige Architektur.</p>
+    <div class="sk-grid" id="sketches"></div>
+  </section>
+</main>
+<footer class="h-foot"><a href="/">Zum QR-Code-Manager</a> · <a href="/info">Kundensicht: So funktioniert QR-Pay</a></footer>`, ['help.js']);
+}
+
 function message(title, text) {
   return page(title, 'mobile info', `<main class="m-wrap result"><div class="status-icon err" aria-hidden="true"></div><h1 class="r-title">${esc(title)}</h1><p class="r-text">${esc(text)}</p>
   <p class="r-text">Bitte scanne den QR-Code erneut. Klappt es weiterhin nicht, wende dich an den Rechnungssteller.</p>
   <a class="btn block" href="/info">So funktioniert QR-Pay</a></main>`);
 }
 
-module.exports = { manager, pay, provider, result, message, info };
+module.exports = { manager, pay, provider, result, message, info, help };

@@ -58,6 +58,7 @@ const route = (method, pattern, handler, { admin = false } = {}) => routes.push(
 
 route('GET', /^\/$/, (req, res) => send(res, 200, views.manager()), { admin: true });
 route('GET', /^\/info$/, (req, res) => send(res, 200, views.info()));
+route('GET', /^\/hilfe$/, (req, res) => send(res, 200, views.help()));
 route('GET', /^\/s\/([\w.-]+)$/, (req, res, [token]) => send(res, 200, views.pay(token)));
 route('GET', /^\/anbieter\/(\w+)\/([\w-]+)$/, async (req, res, [method, pid]) => {
   const p = await P.getPayment(pid);
