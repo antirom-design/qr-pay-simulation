@@ -11,9 +11,9 @@ const releaseNotes = [
     datum: 'Sa 31.10.2026',
     items: [
       {
-        titel: 'Schutz gegen teure Fehler im API-Konzept',
-        uhr: 17,
-        text: 'Neu im API-Konzept: Schutz gegen teure Fehler. Der Kunde signiert und haftet, dazu kommen Signierwerkzeug, Prüfdienst vor dem Druck und Scharfschalten jeder Versandwelle im Vier-Augen-Prinzip.',
+        titel: 'API-Konzept für ein internes Team, mit Fahrplan',
+        uhr: 18,
+        text: 'Das API-Konzept geht jetzt davon aus, dass ein eigenes Team im Haus die Lösung baut und betreibt: signiert wird in der internen Zone, geprüft in der DMZ, jede Versandwelle wird im Vier-Augen-Prinzip scharfgeschaltet. Neu ist ein Fahrplan über 13 Monate, der mit der Ausschreibung des Zahlungsdienstleisters beginnt.',
       },
       {
         titel: 'API-Konzept für den Produktivbetrieb',
