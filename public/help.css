@@ -161,3 +161,20 @@ body.help {
   .skt .sa { margin: 0 5px; }
 }
 @media (prefers-reduced-motion: reduce) { .st.now .draw { animation: none; stroke-dashoffset: 0; } }
+
+/* Feature Release Notes */
+.rn-meta { margin: 6px 0 0; font-family: var(--mono); font-size: 14px; color: var(--g2); }
+.rn-meta.sm { margin-top: 2px; font-size: 12.5px; color: var(--g3); }
+.rn-day { padding: 28px 0; border-bottom: 1px solid var(--g4); }
+.rn-day:last-child { border-bottom: 0; }
+.rn-day h2 { font-family: var(--mono); font-size: 15px; font-weight: 600; margin: 0 0 18px; }
+.rn-hour { display: grid; grid-template-columns: 10rem minmax(0, 1fr); gap: 32px; }
+.rn-hour + .rn-hour { margin-top: 22px; }
+.rn-hour h3 { font-family: var(--mono); font-size: 14px; font-weight: 400; color: var(--g2); margin: 0; padding-top: 3px; }
+.rn-hour ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 20px; }
+.rn-hour h4 { font-size: 17px; font-weight: 600; margin: 0; }
+.rn-hour p { margin: 4px 0 0; color: var(--g2); line-height: 1.55; max-width: 680px; }
+@media (max-width: 700px) {
+  .rn-hour { grid-template-columns: 1fr; gap: 8px; }
+  .rn-hour h4 { font-size: 16px; }
+}

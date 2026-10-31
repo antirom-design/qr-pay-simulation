@@ -204,6 +204,18 @@ server.listen(0, async () => {
     assert.equal(r.body.status, 'erledigt');
     ok('DOK: Upload nach Ident, Prüfsumme, verschlüsselt gespeichert, im Manager wieder lesbar');
 
+    // Feature Release Notes
+    const { RELEASE_NOTES_STAND, releaseNotes } = require('../src/releaseNotes');
+    r = await call('GET', '/release-notes');
+    assert.equal(r.status, 200);
+    assert.ok(r.body.includes(RELEASE_NOTES_STAND.commit));
+    for (const day of releaseNotes) for (const item of day.items) {
+      assert.ok(Number.isInteger(item.uhr) && item.uhr >= 0 && item.uhr <= 23, `uhr bei „${item.titel}“`);
+      assert.ok(item.titel && item.text, 'titel und text gesetzt');
+    }
+    for (const page of ['/', '/hilfe', '/konzept']) assert.match((await call('GET', page)).body, /href="\/release-notes"/);
+    ok('Release Notes: Seite mit Stichtag, verlinkt aus Generator, Hilfe und Konzept');
+
     console.log(`\nAlle ${n} Tests bestanden.`);
   } catch (e) {
     console.error(e);
