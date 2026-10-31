@@ -8,6 +8,16 @@ const RELEASE_NOTES_STAND = { datum: '29.10.2026', uhrzeit: '22:19', commit: '06
 // text (ein bis drei Sätze, wie ein Nutzer es erlebt)
 const releaseNotes = [
   {
+    datum: 'Sa 31.10.2026',
+    items: [
+      {
+        titel: 'API-Konzept für den Produktivbetrieb',
+        uhr: 17,
+        text: 'Neue Seite „API-Konzept“, oben in der Kopfzeile verlinkt: wie aus der Simulation eine Schnittstelle für Millionen Zahl-Links wird, mit Code-Format, Schlüsseln, Rückmeldung, Sicherheit, Fallstricken und PoV-Plan. Die Simulation selbst bleibt unverändert.',
+      },
+    ],
+  },
+  {
     datum: 'Do 29.10.2026',
     items: [
       {

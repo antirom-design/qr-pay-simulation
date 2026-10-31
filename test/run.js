@@ -216,6 +216,14 @@ server.listen(0, async () => {
     for (const page of ['/', '/hilfe', '/konzept']) assert.match((await call('GET', page)).body, /href="\/release-notes"/);
     ok('Release Notes: Seite mit Stichtag, verlinkt aus Generator, Hilfe und Konzept');
 
+    // API-Konzept
+    r = await call('GET', '/api-konzept');
+    assert.equal(r.status, 200);
+    assert.match(r.body, /Fallstricke und Sackgassen/);
+    assert.ok(!r.body.includes('<script'), 'keine Skripte im Konzepttext');
+    for (const page of ['/', '/hilfe', '/konzept', '/release-notes']) assert.match((await call('GET', page)).body, /href="\/api-konzept"/);
+    ok('API-Konzept: Seite erreichbar, verlinkt aus Generator, Hilfe, Konzept und Release Notes');
+
     console.log(`\nAlle ${n} Tests bestanden.`);
   } catch (e) {
     console.error(e);

@@ -178,3 +178,26 @@ body.help {
   .rn-hour { grid-template-columns: 1fr; gap: 8px; }
   .rn-hour h4 { font-size: 16px; }
 }
+
+/* API-Konzept: Langtext aus dem Konzeptdokument */
+.ak { max-width: 860px; padding-top: 28px; line-height: 1.6; }
+.ak h1 { font-size: 26px; margin: 0 0 6px; font-weight: 600; line-height: 1.3; }
+.ak h2 { font-size: 19px; font-weight: 600; margin: 40px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--g4); }
+.ak h3 { font-size: 15.5px; font-weight: 600; margin: 24px 0 8px; }
+.ak p, .ak li { color: var(--g1); font-size: 15px; }
+.ak ol, .ak ul { padding-left: 22px; }
+.ak li p { margin: 4px 0; }
+.ak li:has(> input) { list-style: none; margin-left: -22px; }
+.ak code { font-family: var(--mono); font-size: .88em; background: var(--g5); padding: 1px 4px; border-radius: 4px; overflow-wrap: anywhere; }
+.ak pre { background: var(--g5); padding: 12px 14px; border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.5; }
+.ak pre code { background: none; padding: 0; white-space: pre-wrap; word-break: break-all; }
+.ak-tw { overflow-x: auto; margin: 12px 0; }
+.ak table { border-collapse: collapse; width: 100%; font-size: 14px; }
+.ak th, .ak td { text-align: left; vertical-align: top; padding: 7px 10px; border-bottom: 1px solid var(--g5); }
+.ak thead th { font-weight: 600; color: var(--g2); border-bottom: 1px solid var(--g4); font-size: 13px; }
+.ak td p, .ak th p { margin: 0; font-size: inherit; }
+.ak .rn-meta { color: var(--g2); font-size: 13px; }
+.ak-fig { margin: 20px 0 8px; }
+.ak-fig svg { width: 100%; height: auto; display: block; }
+.ak-fig figcaption { font-size: 12.5px; color: var(--g2); margin-top: 6px; }
+.n.hi rect { stroke: var(--hi); stroke-width: 2; fill: #eff6ff; }
