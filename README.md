@@ -36,6 +36,10 @@ Die komplette Strecke „Bezahlen per QR-Code“ zum Durchklicken. Es wird kein 
 `https://<host>/s/<base64url(JSON)>.<HMAC-SHA256>` mit JSON `{ v, id, t (Art), n (Version), d: { kundennummer, betrag, gebuehr, zweck } }`.
 Die Daten sind lesbar, aber durch die Signatur nicht fälschbar. Beträge stehen in Cent. Bezahlt wird immer der Betrag aus der Datenbank.
 
+## Release Notes
+
+Unter `/release-notes` stehen alle Features nach Tag und Stunde, neueste zuerst. Wie sie gepflegt werden, steht in `AGENTS.md`.
+
 ## Lokal starten
 
 Node 22.13 oder neuer.
@@ -70,6 +74,7 @@ src/payments.js   Service 2: Decoding-Schritte, Zahlung starten, Anbieter-Ergebn
 src/flows.js      Anmeldung (Geburtsdatum, Ident), Kontostand, Adressänderung, Dokument-Upload (AES-256-GCM)
 src/app.js        HTTP-Routen und API
 src/views.js      HTML-Seiten
+src/releaseNotes.js  Inhalt der Seite /release-notes (Pflege siehe AGENTS.md)
 public/           manager.js, pay.js + flows.js (Handy), provider.js (Anbieter-Checkouts), style.css
 api/index.js      Einstieg für Vercel
 ```
