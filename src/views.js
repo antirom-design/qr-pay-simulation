@@ -1,5 +1,6 @@
 // HTML-Seiten. Interaktion liegt in public/*.js, Gestaltung in public/style.css
 const { eur, esc, kdnr } = require('./format');
+const { RELEASE_NOTES_STAND, releaseNotes: RELEASE_NOTES } = require('./releaseNotes');
 
 const page = (title, bodyClass, body, scripts = []) => `<!doctype html>
 <html lang="de">
@@ -24,7 +25,7 @@ function manager() {
   return page('QR-Pay Simulation', 'manager', `
 <header class="top">
   <div class="brand"><span class="logo" aria-hidden="true"></span><div><strong>QR-Pay</strong><small>Simulation · keine echten Zahlungen</small></div></div>
-  <div class="top-meta"><a href="/konzept">Konzept</a><a href="/hilfe">Hilfe</a><a href="/info">So funktioniert's</a><span id="meta"></span></div>
+  <div class="top-meta"><a href="/konzept">Konzept</a><a href="/hilfe">Hilfe</a><a href="/release-notes">Release Notes</a><a href="/info">So funktioniert's</a><span id="meta"></span></div>
 </header>
 
 <main class="wrap">
@@ -209,7 +210,7 @@ function concept() {
 <link rel="stylesheet" href="/static/help.css">
 <header class="top">
   <div class="brand"><a href="/" class="logo" aria-label="Zum Manager"></a><div><strong>QR-Vorgänge</strong><small>Konzept des Services</small></div></div>
-  <nav class="top-meta h-nav"><a href="/hilfe">Hilfe</a><a href="/">Zum Generator</a></nav>
+  <nav class="top-meta h-nav"><a href="/hilfe">Hilfe</a><a href="/release-notes">Release Notes</a><a href="/">Zum Generator</a></nav>
 </header>
 <main class="h-wrap">
   <section class="h-sec">
@@ -304,7 +305,7 @@ function help(TYPES) {
 <link rel="stylesheet" href="/static/help.css">
 <header class="top">
   <div class="brand"><a href="/" class="logo" aria-label="Zum Generator"></a><div><strong>QR-Vorgänge</strong><small>Hilfe zum Generator</small></div></div>
-  <nav class="top-meta h-nav"><a href="/konzept">Konzept</a><a href="/">Zum Generator</a></nav>
+  <nav class="top-meta h-nav"><a href="/konzept">Konzept</a><a href="/release-notes">Release Notes</a><a href="/">Zum Generator</a></nav>
 </header>
 <main class="h-wrap">
   <section class="h-sec">
@@ -352,10 +353,34 @@ function help(TYPES) {
 </main>`);
 }
 
+// Feature Release Notes: Inhalt und Stichtag stehen in src/releaseNotes.js
+function releaseNotes() {
+  // Einträge eines Tages nach Stunde gruppiert, die späteste Stunde zuerst
+  const byHour = (items) => [...items.reduce((m, i) => m.set(i.uhr, [...(m.get(i.uhr) || []), i]), new Map())].sort((a, b) => b[0] - a[0]);
+  const days = RELEASE_NOTES.map((d) => `<section class="rn-day"><h2>${esc(d.datum)}</h2>${byHour(d.items).map(([uhr, items]) => `
+    <div class="rn-hour"><h3>${String(uhr).padStart(2, '0')} Uhr</h3><ul>${items.map((i) => `<li><h4>${esc(i.titel)}</h4><p>${esc(i.text)}</p></li>`).join('')}</ul></div>`).join('')}
+  </section>`).join('');
+  const st = RELEASE_NOTES_STAND;
+  return page('QR-Vorgänge · Release Notes', 'help', `
+<link rel="stylesheet" href="/static/help.css">
+<header class="top">
+  <div class="brand"><a href="/" class="logo" aria-label="Zum Generator"></a><div><strong>QR-Vorgänge</strong><small>Feature Release Notes</small></div></div>
+  <nav class="top-meta h-nav"><a href="/konzept">Konzept</a><a href="/hilfe">Hilfe</a><a href="/">Zum Generator</a></nav>
+</header>
+<main class="h-wrap rn">
+  <section class="h-sec">
+    <h1>Release Notes</h1>
+    <p class="rn-meta">stand ${esc(st.datum)} ${esc(st.uhrzeit)} · ${esc(st.commit)}</p>
+    <p class="rn-meta sm">uhrzeit = stunde, in der die änderung auf main ging (deutsche zeit)</p>
+  </section>
+  ${days}
+</main>`);
+}
+
 function message(title, text) {
   return page(title, 'mobile info', `<main class="m-wrap result"><div class="status-icon err" aria-hidden="true"></div><h1 class="r-title">${esc(title)}</h1><p class="r-text">${esc(text)}</p>
   <p class="r-text">Bitte scanne den QR-Code erneut. Klappt es weiterhin nicht, wende dich an den Rechnungssteller.</p>
   <a class="btn block" href="/info">So funktioniert QR-Pay</a></main>`);
 }
 
-module.exports = { manager, pay, provider, result, message, info, concept, help };
+module.exports = { manager, pay, provider, result, message, info, concept, help, releaseNotes };
