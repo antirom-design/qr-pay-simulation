@@ -11,9 +11,9 @@ const releaseNotes = [
     datum: 'Sa 31.10.2026',
     items: [
       {
-        titel: 'Lastannahme mit 30 Mio. Scans im Jahr',
+        titel: 'Lastannahme mit höchstens 20.000 Scans am Tag',
         uhr: 19,
-        text: 'Das API-Konzept rechnet jetzt mit rund 30 Millionen Scans pro Jahr: etwa 94 Scans pro Sekunde in der Spitzenstunde, ausgelegt auf 1 000 pro Sekunde. Am einfachen Aufbau mit einer Datenbank je Zone ändert das nichts.',
+        text: 'Das API-Konzept rechnet jetzt mit höchstens 20.000 Scans am Tag, also weniger als einem Scan pro Sekunde in der Spitzenstunde. Ausgelegt ist der Dienst auf 50 pro Sekunde, zwei Instanzen gibt es nur wegen der Ausfallsicherheit.',
       },
       {
         titel: 'Buchhaltung bucht vom Kontoauszug',
