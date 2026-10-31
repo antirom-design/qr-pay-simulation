@@ -11,6 +11,11 @@ const releaseNotes = [
     datum: 'Sa 31.10.2026',
     items: [
       {
+        titel: 'Buchhaltung bucht vom Kontoauszug',
+        uhr: 19,
+        text: 'Im API-Konzept ist jetzt der Kontoauszug maßgeblich: Gebucht wird erst, wenn das Geld auf dem Konto steht. Die Zahlseite liefert nur die Vormerkung und die Aufschlüsselung von Sammelzahlungen, ein täglicher Abgleich prüft alles auf den Cent.',
+      },
+      {
         titel: 'API-Konzept für ein internes Team, mit Fahrplan',
         uhr: 18,
         text: 'Das API-Konzept geht jetzt davon aus, dass ein eigenes Team im Haus die Lösung baut und betreibt: signiert wird in der internen Zone, geprüft in der DMZ, jede Versandwelle wird im Vier-Augen-Prinzip scharfgeschaltet. Neu ist ein Fahrplan über 13 Monate, der mit der Ausschreibung des Zahlungsdienstleisters beginnt.',
