@@ -11,6 +11,11 @@ const releaseNotes = [
     datum: 'Sa 31.10.2026',
     items: [
       {
+        titel: 'Lastannahme mit höchstens 20.000 Scans am Tag',
+        uhr: 19,
+        text: 'Das API-Konzept rechnet jetzt mit höchstens 20.000 Scans am Tag, also weniger als einem Scan pro Sekunde in der Spitzenstunde. Ausgelegt ist der Dienst auf 50 pro Sekunde, zwei Instanzen gibt es nur wegen der Ausfallsicherheit.',
+      },
+      {
         titel: 'Buchhaltung bucht vom Kontoauszug',
         uhr: 19,
         text: 'Im API-Konzept ist jetzt der Kontoauszug maßgeblich: Gebucht wird erst, wenn das Geld auf dem Konto steht. Die Zahlseite liefert nur die Vormerkung und die Aufschlüsselung von Sammelzahlungen, ein täglicher Abgleich prüft alles auf den Cent.',
