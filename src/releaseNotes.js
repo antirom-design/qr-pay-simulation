@@ -11,6 +11,11 @@ const releaseNotes = [
     datum: 'Sa 31.10.2026',
     items: [
       {
+        titel: 'Schutz gegen teure Fehler im API-Konzept',
+        uhr: 17,
+        text: 'Neu im API-Konzept: Schutz gegen teure Fehler. Der Kunde signiert und haftet, dazu kommen Signierwerkzeug, Prüfdienst vor dem Druck und Scharfschalten jeder Versandwelle im Vier-Augen-Prinzip.',
+      },
+      {
         titel: 'API-Konzept für den Produktivbetrieb',
         uhr: 17,
         text: 'Neue Seite „API-Konzept“, oben in der Kopfzeile verlinkt: wie aus der Simulation eine Schnittstelle für Millionen Zahl-Links wird, mit Code-Format, Schlüsseln, Rückmeldung, Sicherheit, Fallstricken und PoV-Plan. Die Simulation selbst bleibt unverändert.',
