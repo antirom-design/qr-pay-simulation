@@ -201,3 +201,14 @@ body.help {
 .ak-fig svg { width: 100%; height: auto; display: block; }
 .ak-fig figcaption { font-size: 12.5px; color: var(--g2); margin-top: 6px; }
 .n.hi rect { stroke: var(--hi); stroke-width: 2; fill: #eff6ff; }
+.ak-zone { fill: var(--g5); stroke: none; }
+.ak-zl { font-size: 11.5px; font-weight: 600; fill: var(--g2); }
+.tl-grid { stroke: var(--g4, #e5e7eb); stroke-width: 1; }
+.tl-axis { stroke: var(--g3); stroke-width: 1; }
+.tl-gate { stroke: var(--g3); stroke-width: 1; stroke-dasharray: 3 4; }
+.tl-dia { fill: var(--g1); }
+.tl-gl { font-size: 11.5px; font-weight: 600; fill: var(--g1); }
+.tl-rl { font-size: 12px; fill: var(--g1); }
+.tl-rl.b { font-weight: 600; }
+.tl-bar { fill: var(--g3); fill-opacity: .14; stroke: var(--g3); stroke-width: 1.25; }
+.tl-bar.v { fill: var(--hi); fill-opacity: .35; stroke: var(--hi); }

@@ -11,6 +11,11 @@ const releaseNotes = [
     datum: 'Sa 31.10.2026',
     items: [
       {
+        titel: 'API-Konzept für ein internes Team, mit Fahrplan',
+        uhr: 18,
+        text: 'Das API-Konzept geht jetzt davon aus, dass ein eigenes Team im Haus die Lösung baut und betreibt: signiert wird in der internen Zone, geprüft in der DMZ, jede Versandwelle wird im Vier-Augen-Prinzip scharfgeschaltet. Neu ist ein Fahrplan über 13 Monate, der mit der Ausschreibung des Zahlungsdienstleisters beginnt.',
+      },
+      {
         titel: 'API-Konzept für den Produktivbetrieb',
         uhr: 17,
         text: 'Neue Seite „API-Konzept“, oben in der Kopfzeile verlinkt: wie aus der Simulation eine Schnittstelle für Millionen Zahl-Links wird, mit Code-Format, Schlüsseln, Rückmeldung, Sicherheit, Fallstricken und PoV-Plan. Die Simulation selbst bleibt unverändert.',
