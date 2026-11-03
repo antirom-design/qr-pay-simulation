@@ -1,5 +1,7 @@
 # Methode 2.0: Vom Prototyp zum Produktionsplan
 
+> **Abgelöst durch methode-2.1.prompt.md.** Diese Fassung bleibt nur zum Nachlesen.
+
 > **So nutzen wir das**
 > Wir öffnen ein leeres Repository in einem Coding-Agenten (z. B. Claude Code), geben ihm diese Datei und beschreiben die Idee in einem Satz.
 > Im Chat schärfen wir Schritt für Schritt. Parallel entsteht eine Website, die immer gleich aufgebaut ist: erst der klickbare Prototyp,
