@@ -11,6 +11,11 @@ const releaseNotes = [
     datum: 'Di 03.11.2026',
     items: [
       {
+        titel: 'Methode: Prompt 2.1 zum Kopieren',
+        uhr: 20,
+        text: 'Auf der Seite „Methode“ steht jetzt Prompt 2.1 ganz oben: Damit baut eine KI für jedes neue Vorhaben eine Website mit demselben Aufbau wie diese, vom Prototyp bis zum Projektstand. Das bisherige Explore-Briefing 1.1 bleibt darunter zum Nachlesen.',
+      },
+      {
         titel: 'Methode: vom Prototyp zum Produktionsplan',
         uhr: 6,
         text: 'Neue Seite „Methode“, oben in der Kopfzeile verlinkt: wie aus einem Prototyp in vier Schritten ein Produktionsplan wird, am Beispiel dieses Projekts. Dazu ein Briefing zum Kopieren, mit dem eine KI ein neues Vorhaben in einer Sitzung auf etwa 80 % bringt.',

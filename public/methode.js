@@ -11,9 +11,12 @@
   el('line',{x1:x0,y1:178,x2:1000-10,y2:178,'class':'tl-axis'});
   ms.forEach(function(p){var x=x0+p[0]*w; el('line',{x1:x,y1:24,x2:x,y2:178,'class':'tl-ms'}); el('path',{d:'M'+x+' 172 l6 6 -6 6 -6 -6z','class':'tl-dia'}); el('text',{x:p[0]===13?x:x,y:200,'text-anchor':p[0]===13?'end':'middle','class':'tl-gl'},p[1]);});
 
-  var btn=document.getElementById('copyBtn'), pre=document.getElementById('promptText'), st=document.getElementById('copyStatus');
-  function sel(){var r=document.createRange();r.selectNodeContents(pre);var s=window.getSelection();s.removeAllRanges();s.addRange(r);st.textContent='Text ist markiert, mit Strg+C oder Cmd+C kopieren.';}
-  btn.addEventListener('click',function(){
-    try{navigator.clipboard.writeText(pre.textContent).then(function(){st.textContent='Kopiert.';},sel);}catch(e){sel();}
+  var st=document.getElementById('copyStatus');
+  Array.prototype.forEach.call(document.querySelectorAll('[data-copy]'),function(btn){
+    var pre=document.getElementById(btn.getAttribute('data-copy'));
+    function sel(){var r=document.createRange();r.selectNodeContents(pre);var s=window.getSelection();s.removeAllRanges();s.addRange(r);st.textContent='Text ist markiert, mit Strg+C oder Cmd+C kopieren.';}
+    btn.addEventListener('click',function(){
+      try{navigator.clipboard.writeText(pre.textContent).then(function(){st.textContent='Kopiert: '+btn.parentNode.querySelector('.meta').textContent;},sel);}catch(e){sel();}
+    });
   });
 })();
