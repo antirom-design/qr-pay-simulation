@@ -224,6 +224,14 @@ server.listen(0, async () => {
     for (const page of ['/', '/hilfe', '/konzept', '/release-notes']) assert.match((await call('GET', page)).body, /href="\/api-konzept"/);
     ok('API-Konzept: Seite erreichbar, verlinkt aus Generator, Hilfe, Konzept und Release Notes');
 
+    // Methode
+    r = await call('GET', '/methode');
+    assert.equal(r.status, 200);
+    assert.match(r.body, /Vom Prototyp zum Produktionsplan/);
+    assert.match(r.body, /Explore-Briefing/);
+    for (const page of ['/', '/hilfe', '/konzept', '/api-konzept', '/release-notes']) assert.match((await call('GET', page)).body, /href="\/methode"/);
+    ok('Methode: Seite erreichbar, verlinkt aus Generator, Hilfe, Konzept, API-Konzept und Release Notes');
+
     console.log(`\nAlle ${n} Tests bestanden.`);
   } catch (e) {
     console.error(e);

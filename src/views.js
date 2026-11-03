@@ -2,6 +2,7 @@
 const { eur, esc, kdnr } = require('./format');
 const { RELEASE_NOTES_STAND, releaseNotes: RELEASE_NOTES } = require('./releaseNotes');
 const API_KONZEPT = require('./apiKonzept');
+const METHODE = require('./methode');
 
 const page = (title, bodyClass, body, scripts = []) => `<!doctype html>
 <html lang="de">
@@ -26,7 +27,7 @@ function manager() {
   return page('QR-Pay Simulation', 'manager', `
 <header class="top">
   <div class="brand"><span class="logo" aria-hidden="true"></span><div><strong>QR-Pay</strong><small>Simulation · keine echten Zahlungen</small></div></div>
-  <div class="top-meta"><a href="/konzept">Konzept</a><a href="/api-konzept">API-Konzept</a><a href="/hilfe">Hilfe</a><a href="/release-notes">Release Notes</a><a href="/info">So funktioniert's</a><span id="meta"></span></div>
+  <div class="top-meta"><a href="/konzept">Konzept</a><a href="/api-konzept">API-Konzept</a><a href="/methode">Methode</a><a href="/hilfe">Hilfe</a><a href="/release-notes">Release Notes</a><a href="/info">So funktioniert's</a><span id="meta"></span></div>
 </header>
 
 <main class="wrap">
@@ -211,7 +212,7 @@ function concept() {
 <link rel="stylesheet" href="/static/help.css">
 <header class="top">
   <div class="brand"><a href="/" class="logo" aria-label="Zum Manager"></a><div><strong>QR-Vorgänge</strong><small>Konzept des Services</small></div></div>
-  <nav class="top-meta h-nav"><a href="/api-konzept">API-Konzept</a><a href="/hilfe">Hilfe</a><a href="/release-notes">Release Notes</a><a href="/">Zum Generator</a></nav>
+  <nav class="top-meta h-nav"><a href="/api-konzept">API-Konzept</a><a href="/methode">Methode</a><a href="/hilfe">Hilfe</a><a href="/release-notes">Release Notes</a><a href="/">Zum Generator</a></nav>
 </header>
 <main class="h-wrap">
   <section class="h-sec">
@@ -306,7 +307,7 @@ function help(TYPES) {
 <link rel="stylesheet" href="/static/help.css">
 <header class="top">
   <div class="brand"><a href="/" class="logo" aria-label="Zum Generator"></a><div><strong>QR-Vorgänge</strong><small>Hilfe zum Generator</small></div></div>
-  <nav class="top-meta h-nav"><a href="/konzept">Konzept</a><a href="/api-konzept">API-Konzept</a><a href="/release-notes">Release Notes</a><a href="/">Zum Generator</a></nav>
+  <nav class="top-meta h-nav"><a href="/konzept">Konzept</a><a href="/api-konzept">API-Konzept</a><a href="/methode">Methode</a><a href="/release-notes">Release Notes</a><a href="/">Zum Generator</a></nav>
 </header>
 <main class="h-wrap">
   <section class="h-sec">
@@ -366,7 +367,7 @@ function releaseNotes() {
 <link rel="stylesheet" href="/static/help.css">
 <header class="top">
   <div class="brand"><a href="/" class="logo" aria-label="Zum Generator"></a><div><strong>QR-Vorgänge</strong><small>Feature Release Notes</small></div></div>
-  <nav class="top-meta h-nav"><a href="/konzept">Konzept</a><a href="/api-konzept">API-Konzept</a><a href="/hilfe">Hilfe</a><a href="/">Zum Generator</a></nav>
+  <nav class="top-meta h-nav"><a href="/konzept">Konzept</a><a href="/api-konzept">API-Konzept</a><a href="/methode">Methode</a><a href="/hilfe">Hilfe</a><a href="/">Zum Generator</a></nav>
 </header>
 <main class="h-wrap rn">
   <section class="h-sec">
@@ -384,9 +385,21 @@ function apiConcept() {
 <link rel="stylesheet" href="/static/help.css">
 <header class="top">
   <div class="brand"><a href="/" class="logo" aria-label="Zum Generator"></a><div><strong>QR-Vorgänge</strong><small>API-Konzept für den Produktivbetrieb</small></div></div>
-  <nav class="top-meta h-nav"><a href="/konzept">Konzept</a><a href="/hilfe">Hilfe</a><a href="/release-notes">Release Notes</a><a href="/">Zum Generator</a></nav>
+  <nav class="top-meta h-nav"><a href="/konzept">Konzept</a><a href="/methode">Methode</a><a href="/hilfe">Hilfe</a><a href="/release-notes">Release Notes</a><a href="/">Zum Generator</a></nav>
 </header>
 <main class="h-wrap"><article class="ak">${API_KONZEPT}</article></main>`);
+}
+
+// Methode: vom Prototyp zum Produktionsplan, Inhalt steht in src/methode.js
+function methode() {
+  return page('QR-Vorgänge · Methode', 'help methode', `
+<link rel="stylesheet" href="/static/help.css">
+<link rel="stylesheet" href="/static/methode.css">
+<header class="top">
+  <div class="brand"><a href="/" class="logo" aria-label="Zum Generator"></a><div><strong>QR-Vorgänge</strong><small>Methode: vom Prototyp zum Produktionsplan</small></div></div>
+  <nav class="top-meta h-nav"><a href="/konzept">Konzept</a><a href="/api-konzept">API-Konzept</a><a href="/hilfe">Hilfe</a><a href="/release-notes">Release Notes</a><a href="/">Zum Generator</a></nav>
+</header>
+${METHODE}`, ['methode.js']);
 }
 
 function message(title, text) {
@@ -395,4 +408,4 @@ function message(title, text) {
   <a class="btn block" href="/info">So funktioniert QR-Pay</a></main>`);
 }
 
-module.exports = { manager, pay, provider, result, message, info, concept, help, releaseNotes, apiConcept };
+module.exports = { manager, pay, provider, result, message, info, concept, help, releaseNotes, apiConcept, methode };

@@ -2,11 +2,21 @@
 // Neue Einträge oben anfügen und RELEASE_NOTES_STAND setzen, Ablauf siehe AGENTS.md.
 
 // Stichtag der letzten Aktualisierung: alles bis einschließlich dieses Commits steht in der Seite
-const RELEASE_NOTES_STAND = { datum: '29.10.2026', uhrzeit: '22:19', commit: '06b2618' };
+const RELEASE_NOTES_STAND = { datum: '31.10.2026', uhrzeit: '19:50', commit: '285334c' };
 
 // Neueste Tage zuerst. Pro Eintrag: titel (kurz), uhr (Stunde 0–23 in deutscher Zeit, an der die Änderung live ging),
 // text (ein bis drei Sätze, wie ein Nutzer es erlebt)
 const releaseNotes = [
+  {
+    datum: 'Di 03.11.2026',
+    items: [
+      {
+        titel: 'Methode: vom Prototyp zum Produktionsplan',
+        uhr: 6,
+        text: 'Neue Seite „Methode“, oben in der Kopfzeile verlinkt: wie aus einem Prototyp in vier Schritten ein Produktionsplan wird, am Beispiel dieses Projekts. Dazu ein Briefing zum Kopieren, mit dem eine KI ein neues Vorhaben in einer Sitzung auf etwa 80 % bringt.',
+      },
+    ],
+  },
   {
     datum: 'Sa 31.10.2026',
     items: [
