@@ -2,7 +2,7 @@
 // Neue Einträge oben anfügen und RELEASE_NOTES_STAND setzen, Ablauf siehe AGENTS.md.
 
 // Stichtag der letzten Aktualisierung: alles bis einschließlich dieses Commits steht in der Seite
-const RELEASE_NOTES_STAND = { datum: '31.10.2026', uhrzeit: '19:50', commit: '285334c' };
+const RELEASE_NOTES_STAND = { datum: '03.11.2026', uhrzeit: '21:06', commit: '2932df5' };
 
 // Neueste Tage zuerst. Pro Eintrag: titel (kurz), uhr (Stunde 0–23 in deutscher Zeit, an der die Änderung live ging),
 // text (ein bis drei Sätze, wie ein Nutzer es erlebt)
@@ -49,6 +49,11 @@ const releaseNotes = [
         titel: 'API-Konzept für den Produktivbetrieb',
         uhr: 17,
         text: 'Neue Seite „API-Konzept“, oben in der Kopfzeile verlinkt: wie aus der Simulation eine Schnittstelle für Millionen Zahl-Links wird, mit Code-Format, Schlüsseln, Rückmeldung, Sicherheit, Fallstricken und PoV-Plan. Die Simulation selbst bleibt unverändert.',
+      },
+      {
+        titel: 'Release Notes',
+        uhr: 16,
+        text: 'Neue Seite „Release Notes“, oben in der Kopfzeile verlinkt: alle Neuerungen seit dem ersten Prototyp, nach Tag und Stunde, die neuesten zuerst.',
       },
     ],
   },
