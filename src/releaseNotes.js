@@ -11,6 +11,11 @@ const releaseNotes = [
     datum: 'Di 03.11.2026',
     items: [
       {
+        titel: 'Methode: Prompt 2.2 mit klarem Einstieg',
+        uhr: 21,
+        text: 'Prompt 2.2 steht jetzt oben auf der Seite „Methode“. Er fragt zum Start nur nach der Idee, baut nach einer Fragerunde einen ersten Gesamtstand und vertieft danach Schritt für Schritt. Umlenken geht jederzeit mit einem Satz. Die Versionen 2.1 und 1.1 bleiben darunter zum Nachlesen.',
+      },
+      {
         titel: 'Methode: Prompt 2.1 zum Kopieren',
         uhr: 20,
         text: 'Auf der Seite „Methode“ steht jetzt Prompt 2.1 ganz oben: Damit baut eine KI für jedes neue Vorhaben eine Website mit demselben Aufbau wie diese, vom Prototyp bis zum Projektstand. Das bisherige Explore-Briefing 1.1 bleibt darunter zum Nachlesen.',
