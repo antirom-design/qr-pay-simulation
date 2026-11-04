@@ -229,7 +229,7 @@ server.listen(0, async () => {
     assert.equal(r.status, 200);
     assert.match(r.body, /Vom Prototyp zum Produktionsplan/);
     assert.match(r.body, /Explore-Briefing/);
-    assert.ok(r.body.indexOf('Version 2.2') < r.body.indexOf('methode-2.1.prompt.md') && r.body.indexOf('methode-2.1.prompt.md') < r.body.indexOf('explore-briefing.prompt.md'), 'neueste Version oben');
+    assert.ok(r.body.indexOf('methode-2.3.prompt.md') < r.body.indexOf('methode-2.2.prompt.md') && r.body.indexOf('methode-2.2.prompt.md') < r.body.indexOf('methode-2.1.prompt.md') && r.body.indexOf('methode-2.1.prompt.md') < r.body.indexOf('explore-briefing.prompt.md'), 'neueste Version oben');
     for (const page of ['/', '/hilfe', '/konzept', '/api-konzept', '/release-notes']) assert.match((await call('GET', page)).body, /href="\/methode"/);
     ok('Methode: Seite erreichbar, verlinkt aus Generator, Hilfe, Konzept, API-Konzept und Release Notes');
 

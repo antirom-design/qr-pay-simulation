@@ -8,6 +8,16 @@ const RELEASE_NOTES_STAND = { datum: '31.10.2026', uhrzeit: '19:50', commit: '28
 // text (ein bis drei Sätze, wie ein Nutzer es erlebt)
 const releaseNotes = [
   {
+    datum: 'Mi 04.11.2026',
+    items: [
+      {
+        titel: 'Methode: Prompt 2.3 läuft ohne Repository',
+        uhr: 6,
+        text: 'Prompt 2.3 steht jetzt oben auf der Seite „Methode“. Er läuft im normalen Chat und baut die Website als eine einzelne Datei, die als Artefakt im Chat erscheint und sich lokal öffnen lässt. Statt einer Reife-Bewertung zeigt er den Bearbeitungsstand je Blickwinkel. Die Versionen 2.2, 2.1 und 1.1 bleiben darunter zum Nachlesen.',
+      },
+    ],
+  },
+  {
     datum: 'Di 03.11.2026',
     items: [
       {
